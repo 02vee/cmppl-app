@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import {
   File as FileIcon, Folder as FolderIcon, Upload, Download, Edit, Trash2, Home, ChevronRight,
-  Truck, MapPin, Lock, Plus, X, ArrowLeft, ArrowRight, RefreshCw, Menu
+  Truck, MapPin, Lock, Plus, X, ArrowLeft, ArrowRight, RefreshCw
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -289,44 +289,6 @@ async function moveFileOrFolder(oldPath: string, newPath: string, isFolder = fal
     await supabase.storage.from(BUCKET).remove([oldPath]);
   }
 }
-
-//---------------------- Global Responsive Navbar ----------------------//
-const Navbar = () => {
-  const [open, setOpen] = useState(false);
-
-  // Close mobile menu on navigation
-  const closeMenu = () => setOpen(false);
-
-  return (
-    <nav className="bg-white/80 backdrop-blur shadow-lg rounded-xl mb-8 sticky top-0 z-30">
-      <div className="flex justify-between items-center px-4 py-4 md:p-6 w-full">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="text-2xl md:text-3xl font-extrabold text-blue-700 tracking-wide">CMPPL</span>
-        </Link>
-        <button
-          className="block md:hidden"
-          onClick={() => setOpen(!open)}
-          aria-label="Menu"
-        >
-          {open ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
-        </button>
-        <div className="hidden md:flex space-x-2 lg:space-x-4">
-          <Link to="/transporter" className="flex items-center px-2 lg:px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition text-base lg:text-lg"><Truck className="mr-2 h-5 w-5" />Transporter</Link>
-          <Link to="/documents" className="flex items-center px-2 lg:px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition text-base lg:text-lg"><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
-          <Link to="/admin/login" className="flex items-center px-2 lg:px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition text-base lg:text-lg"><Lock className="mr-2 h-5 w-5" />Admin</Link>
-        </div>
-      </div>
-      {/* Mobile Nav */}
-      {open && (
-        <div className="flex flex-col px-4 pb-4 space-y-1 md:hidden">
-          <Link to="/transporter" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={closeMenu}><Truck className="mr-2 h-5 w-5" />Transporter</Link>
-          <Link to="/documents" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={closeMenu}><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
-          <Link to="/admin/login" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={closeMenu}><Lock className="mr-2 h-5 w-5" />Admin</Link>
-        </div>
-      )}
-    </nav>
-  );
-};
 
 //---------------------- Home Page ----------------------//
 const HomePage = () => (
@@ -1316,27 +1278,18 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   return <>{children}</>;
 };
 
-//---------------------- Main App with Global Navbar ----------------------//
+//---------------------- Main App ----------------------//
 const App = () => (
   <Router>
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-slate-100">
-      <Navbar />
-      <main className="flex-1">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          {/* 
-            Replace the following stubs with your actual responsive page components.
-            All page containers should use responsive classes as shown in the HomePage example.
-          */}
-          {/* <Route path="/transporter" element={<TransporterPage />} /> */}
-          {/* <Route path="/documents" element={<DocumentsPage />} /> */}
-          {/* <Route path="/admin/login" element={<AdminLogin />} /> */}
-          {/* <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} /> */}
-          {/* <Route path="/admin/track" element={<ProtectedRoute><AdminTrackPage /></ProtectedRoute>} /> */}
-          {/* <Route path="/admin/docs" element={<ProtectedRoute><AdminDocumentsPage /></ProtectedRoute>} /> */}
-        </Routes>
-      </main>
-    </div>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/transporter" element={<TransporterPage />} />
+      <Route path="/documents" element={<DocumentsPage />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/track" element={<ProtectedRoute><AdminTrackPage /></ProtectedRoute>} />
+      <Route path="/admin/docs" element={<ProtectedRoute><AdminDocumentsPage /></ProtectedRoute>} />
+    </Routes>
   </Router>
 );
 
