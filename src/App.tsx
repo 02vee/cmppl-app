@@ -1187,7 +1187,14 @@ const AdminDocumentsPage = () => {
       onKeyDown={handleKeyDown}
     >
       <div className="max-w-6xl mx-auto">
-        <a href="/admin" className="inline-flex items-center text-blue-600 mb-4 hover:underline"><span className="mr-1"><svg className="h-5 w-5 inline" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7m-9 2v8a2 2 0 002 2h4a2 2 0 002-2v-8m-6 0H5.414a2 2 0 00-1.414.586l-.293.293a2 2 0 000 2.828l.293.293A2 2 0 005.414 15H6"></path></svg></span> Back to Dashboard</a>
+        <Link to="/admin" className="inline-flex items-center text-blue-600 mb-4 hover:underline">
+          <span className="mr-1">
+            <svg className="h-5 w-5 inline" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7m-9 2v8a2 2 0 002 2h4a2 2 0 002-2v-8m-6 0H5.414a2 2 0 00-1.414.586l-.293.293a2 2 0 000 2.828l.293.293A2 2 0 005.414 15H6"></path>
+            </svg>
+          </span>
+          Back to Dashboard
+        </Link>
         <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
           <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700"><FolderIcon className="mr-2 h-6 w-6" /> Manage Documents</h2>
           {renderBreadcrumbs()}
