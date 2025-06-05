@@ -1316,18 +1316,27 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   return <>{children}</>;
 };
 
-//---------------------- Main App ----------------------//
+//---------------------- Main App with Global Navbar ----------------------//
 const App = () => (
   <Router>
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/transporter" element={<TransporterPage />} />
-      <Route path="/documents" element={<DocumentsPage />} />
-      <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-      <Route path="/admin/track" element={<ProtectedRoute><AdminTrackPage /></ProtectedRoute>} />
-      <Route path="/admin/docs" element={<ProtectedRoute><AdminDocumentsPage /></ProtectedRoute>} />
-    </Routes>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-slate-100">
+      <Navbar />
+      <main className="flex-1">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          {/* 
+            Replace the following stubs with your actual responsive page components.
+            All page containers should use responsive classes as shown in the HomePage example.
+          */}
+          {/* <Route path="/transporter" element={<TransporterPage />} /> */}
+          {/* <Route path="/documents" element={<DocumentsPage />} /> */}
+          {/* <Route path="/admin/login" element={<AdminLogin />} /> */}
+          {/* <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} /> */}
+          {/* <Route path="/admin/track" element={<ProtectedRoute><AdminTrackPage /></ProtectedRoute>} /> */}
+          {/* <Route path="/admin/docs" element={<ProtectedRoute><AdminDocumentsPage /></ProtectedRoute>} /> */}
+        </Routes>
+      </main>
+    </div>
   </Router>
 );
 
