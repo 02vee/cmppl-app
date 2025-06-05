@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import {
   File as FileIcon, Folder as FolderIcon, Upload, Download, Edit, Trash2, Home, ChevronRight,
-  Truck, MapPin, Lock, Plus, X, ArrowLeft, ArrowRight, RefreshCw
+  Truck, MapPin, Lock, Plus, X, ArrowLeft, ArrowRight, RefreshCw, Menu
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -290,20 +290,42 @@ async function moveFileOrFolder(oldPath: string, newPath: string, isFolder = fal
   }
 }
 
+const ResponsiveNavbar = () => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <nav className="bg-white/80 backdrop-blur shadow-lg rounded-xl mb-8 w-full">
+      <div className="flex justify-between items-center p-4 md:p-6">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-blue-700 tracking-wide">CMPPL</h1>
+        <button
+          className="md:hidden"
+          onClick={() => setOpen(!open)}
+          aria-label="Menu"
+        >
+          {open ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
+        </button>
+        <div className="hidden md:flex space-x-4">
+          <Link to="/transporter" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><Truck className="mr-2 h-5 w-5" />Transporter</Link>
+          <Link to="/documents" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
+          <Link to="/admin/login" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><Lock className="mr-2 h-5 w-5" />Admin</Link>
+        </div>
+      </div>
+      {open && (
+        <div className="flex flex-col px-4 pb-4 space-y-1 md:hidden">
+          <Link to="/transporter" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><Truck className="mr-2 h-5 w-5" />Transporter</Link>
+          <Link to="/documents" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
+          <Link to="/admin/login" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><Lock className="mr-2 h-5 w-5" />Admin</Link>
+        </div>
+      )}
+    </nav>
+  );
+};
+
 //---------------------- Home Page ----------------------//
 const HomePage = () => (
   <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
     <div className="max-w-4xl mx-auto">
-      <nav className="bg-white/80 backdrop-blur shadow-lg rounded-xl mb-8">
-        <div className="flex justify-between items-center p-6">
-          <h1 className="text-3xl font-extrabold text-blue-700 tracking-wide">CMPPL</h1>
-          <div className="flex space-x-4">
-            <Link to="/transporter" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><Truck className="mr-2 h-5 w-5" />Transporter</Link>
-            <Link to="/documents" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
-            <Link to="/admin/login" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><Lock className="mr-2 h-5 w-5" />Admin</Link>
-          </div>
-        </div>
-      </nav>
+      <ResponsiveNavbar />
       <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
         <h2 className="text-2xl font-bold mb-4 text-blue-700">Welcome to CMPPL</h2>
         <p className="mb-2 text-gray-700">
