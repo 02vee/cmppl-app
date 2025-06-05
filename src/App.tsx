@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import {
   File as FileIcon, Folder as FolderIcon, Upload, Download, Edit, Trash2, Home, ChevronRight,
-  Truck, MapPin, Lock, Plus, X, ArrowLeft, ArrowRight, RefreshCw, Menu
+  Truck, MapPin, Lock, Plus, X, ArrowLeft, ArrowRight, RefreshCw
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -289,39 +289,6 @@ async function moveFileOrFolder(oldPath: string, newPath: string, isFolder = fal
     await supabase.storage.from(BUCKET).remove([oldPath]);
   }
 }
-
-//---------------------- Responsive Navbar Component ----------------------//
-const Navbar = () => {
-  const [navOpen, setNavOpen] = useState(false);
-  return (
-    <nav className="bg-white/80 backdrop-blur shadow-lg rounded-xl mb-8 w-full">
-      <div className="flex justify-between items-center px-4 py-4 md:p-6 w-full">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-blue-700 tracking-wide">CMPPL</h1>
-        <button
-          className="md:hidden focus:outline-none"
-          onClick={() => setNavOpen(!navOpen)}
-          aria-label="Toggle navigation"
-        >
-          {navOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
-        </button>
-        <div className="hidden md:flex space-x-2 lg:space-x-4">
-          <Link to="/transporter" className="flex items-center px-2 lg:px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition text-base lg:text-lg"><Truck className="mr-2 h-5 w-5" />Transporter</Link>
-          <Link to="/documents" className="flex items-center px-2 lg:px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition text-base lg:text-lg"><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
-          <Link to="/admin/login" className="flex items-center px-2 lg:px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition text-base lg:text-lg"><Lock className="mr-2 h-5 w-5" />Admin</Link>
-        </div>
-      </div>
-      {/* Mobile Nav */}
-      {navOpen && (
-        <div className="px-4 pb-4 flex flex-col space-y-2 md:hidden">
-          <Link to="/transporter" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setNavOpen(false)}><Truck className="mr-2 h-5 w-5" />Transporter</Link>
-          <Link to="/documents" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setNavOpen(false)}><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
-          <Link to="/admin/login" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setNavOpen(false)}><Lock className="mr-2 h-5 w-5" />Admin</Link>
-        </div>
-      )}
-    </nav>
-  );
-};
-
 
 //---------------------- Home Page ----------------------//
 const HomePage = () => (
