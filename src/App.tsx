@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import {
-  File as FileIcon, Folder as FolderIcon, Upload, Download, Edit, Trash2, Home, ChevronRight, ChevronDown,
+  File as FileIcon, Folder as FolderIcon, Upload, Download, Edit, Trash2, Home, ChevronRight,
   Truck, MapPin, Lock, Plus, X, ArrowLeft, ArrowRight, RefreshCw
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
@@ -475,7 +475,6 @@ const TransporterPage = () => {
 const DocumentsPage = () => {
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [search, setSearch] = useState<string>("");
-  const [expanded, setExpanded] = useState<{[id: string]: boolean}>({});
   const [viewDoc, setViewDoc] = useState<TreeNode | null>(null);
   const [folderStack, setFolderStack] = useState<string[]>([]); // <-- Track folder path
 
@@ -483,18 +482,6 @@ const DocumentsPage = () => {
   async function refresh() {
     const docs = await listTree();
     setTree(buildTree(docs));
-  }
-
-  // Find node by path
-  function findNodeById(id: string, nodes: TreeNode[]): TreeNode | null {
-    for (const n of nodes) {
-      if (n.id === id) return n;
-      if (n.children) {
-        const found = findNodeById(id, n.children);
-        if (found) return found;
-      }
-    }
-    return null;
   }
 
   // Get children of current folder
