@@ -1107,14 +1107,14 @@ const AdminDocumentsPage = () => {
   const doAdd = async () => {
     setUploading(true);
     if (showModal === "folder" && modalInput.trim()) {
-      const folderPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + modalInput;
+      const folderPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalInput);
       await uploadFile(folderPath + "/.keep", new Blob([""], { type: "text/plain" }) as any as File);
       setShowModal(null);
       setModalInput("");
       await refresh();
     }
     if (showModal === "file" && modalFile) {
-      const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + modalFile.name;
+      const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalFile.name);
       await uploadFile(path, modalFile);
       setShowModal(null);
       setModalFile(null);
