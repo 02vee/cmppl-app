@@ -162,6 +162,7 @@ function buildTree(files: TreeNode[]): TreeNode[] {
       parent = node;
     }
   });
+
   // Prune .keep files from display, but folders still exist
   function pruneKeep(nodes: TreeNode[]): TreeNode[] {
     return nodes
@@ -171,16 +172,34 @@ function buildTree(files: TreeNode[]): TreeNode[] {
       );
   }
   const tree = pruneKeep(roots);
-  // Sort folders before files, newest first (by lastModified, file first)
+
+  // Assign lastModified to folders = max(lastModified of all descendants)
+  function assignFolderDates(nodes: TreeNode[]): string | undefined {
+    for (const node of nodes) {
+      if (node.type === "folder" && node.children && node.children.length > 0) {
+        // Recursively assign dates to children first
+        const childrenDates = node.children.map(c => assignFolderDates([c])).filter(Boolean);
+        node.lastModified = childrenDates.length > 0
+          ? childrenDates.sort().reverse()[0] // latest
+          : undefined;
+      }
+    }
+    // Return max lastModified in this level
+    const dates = nodes.map(n => n.lastModified).filter(Boolean) as string[];
+    return dates.length > 0 ? dates.sort().reverse()[0] : undefined;
+  }
+  assignFolderDates(tree);
+
+  // Now sort by lastModified: Newest first, folders/files mixed or folders first
   function sortRecursive(nodes: TreeNode[]) {
     nodes.sort((a, b) => {
-      // Folders first, then files (optional, comment if you want strict date sort)
+      // Folders first, then files (optional: comment out next two lines to mix by date only)
       if (a.type === "folder" && b.type !== "folder") return -1;
       if (a.type !== "folder" && b.type === "folder") return 1;
       // Newest first
       const aTime = a.lastModified ? new Date(a.lastModified).getTime() : 0;
       const bTime = b.lastModified ? new Date(b.lastModified).getTime() : 0;
-      return bTime - aTime; // descending order (newest first)
+      return bTime - aTime;
     });
     nodes.forEach(n => { if (n.children) sortRecursive(n.children); });
   }
