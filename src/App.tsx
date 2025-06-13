@@ -52,8 +52,6 @@ const formatFileSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-// ... [getAddress, geocodeAddress, haversineDistance, estimateETA remain unchanged] ...
-
 async function getAddress(lat: number, lng: number): Promise<string> {
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
@@ -97,6 +95,11 @@ function estimateETA(curr: {lat: number, lng: number}, dest: {lat: number, lng: 
   const mins = Math.round(hours * 60);
   if (mins < 60) return `${mins} mins`;
   return `${Math.floor(mins/60)} hr ${mins%60} min`;
+}
+
+// Utility to sanitize file/folder names
+function sanitizeName(name: string) {
+  return name.replace(/[\\/]/g, "_");
 }
 
 //---------------------- Supabase Folder/File Tree Helpers ----------------------//
@@ -886,7 +889,7 @@ const AdminTrackPage = () => {
 };
 
 //---------------------- Admin Documents Page (Supabase) ----------------------//
-const AdminDocumentsPage = () => {
+const AdminDocumentsPage: React.FC = () => {
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [folderStack, setFolderStack] = useState<string[]>([]);
   const [showModal, setShowModal] = useState<null | "file" | "folder" | "edit">(null);
@@ -908,14 +911,12 @@ const AdminDocumentsPage = () => {
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
 
-  // Focus main container after modal closes or folderStack changes
   useEffect(() => {
     if (!showModal && mainRef.current) {
       mainRef.current.focus();
     }
   }, [showModal, folderStack]);
 
-  // Keyboard shortcuts on main container
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (showModal) return;
     if ((e.ctrlKey || e.metaKey) && selected.size > 0) {
@@ -1061,14 +1062,12 @@ const AdminDocumentsPage = () => {
             <span className="font-semibold truncate">{doc.name}</span>
           </div>
           <div className="text-xs flex-1">
-            {doc.type === "file" && doc.size && <span className="block text-gray-600">{formatFileSize(doc.size)}</span>}
+            {doc.type === "file" && doc.size && <span className="block text-gray-600">{(doc.size! / 1024).toFixed(2)} KB</span>}
             {doc.lastModified && <span className="block text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
           </div>
           <div className="flex gap-1 mt-2">
             {doc.type === "file" && (
-              <>
-                <button onClick={e => { e.stopPropagation(); setViewDoc(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}>View</button>
-              </>
+              <button onClick={e => { e.stopPropagation(); setViewDoc(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}>View</button>
             )}
             <button onClick={e => { e.stopPropagation(); handleRename(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}><Edit className="h-4 w-4" /></button>
             <button onClick={e => { e.stopPropagation(); handleDelete(doc); }} className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100" tabIndex={-1}><Trash2 className="h-4 w-4" /></button>
@@ -1105,14 +1104,14 @@ const AdminDocumentsPage = () => {
   const doAdd = async () => {
     setUploading(true);
     if (showModal === "folder" && modalInput.trim()) {
-      const folderPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + modalInput;
+      const folderPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalInput);
       await uploadFile(folderPath + "/.keep", new Blob([""], { type: "text/plain" }) as any as File);
       setShowModal(null);
       setModalInput("");
       await refresh();
     }
     if (showModal === "file" && modalFile) {
-      const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + modalFile.name;
+      const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalFile.name);
       await uploadFile(path, modalFile);
       setShowModal(null);
       setModalFile(null);
@@ -1123,7 +1122,7 @@ const AdminDocumentsPage = () => {
   };
   const doRename = async () => {
     if (!modalTarget) return;
-    const newName = modalInput.trim();
+    const newName = sanitizeName(modalInput.trim());
     if (!newName || newName === modalTarget.name) { setShowModal(null); return; }
     const prefix = modalTarget.path.substring(0, modalTarget.path.lastIndexOf("/"));
     const newPath = (prefix ? prefix + "/" : "") + newName + (modalTarget.type === "folder" ? "" : "");
@@ -1171,6 +1170,8 @@ const AdminDocumentsPage = () => {
   }
 
   const renderDocViewer = (doc: TreeNode) => {
+    // If you want to support public URL viewing, use your supabase logic here
+    // This is a stub:
     const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
     const ext = doc.name.split('.').pop()?.toLowerCase() || "";
     if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
