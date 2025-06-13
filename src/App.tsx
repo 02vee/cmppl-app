@@ -674,18 +674,23 @@ const DocumentsPage = () => {
         </div>
       </div>
       {viewDoc && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center px-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl animate-fadein overflow-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-xl">{viewDoc.name}</h3>
-              <button onClick={() => setViewDoc(null)}><X className="h-5 w-5" /></button>
-            </div>
-            <div>
-              {renderDocViewer(viewDoc)}
-            </div>
-          </div>
-        </div>
-      )}
+       <div className="fixed inset-0 z-50 bg-white flex flex-col">
+       <div className="flex items-center p-4 bg-blue-700 shadow">
+      <button
+        className="mr-4 text-white flex items-center gap-2 font-bold text-lg"
+        onClick={() => setViewDoc(null)}
+      >
+        <ArrowLeft className="h-6 w-6" /> Back
+      </button>
+      <span className="text-white font-semibold truncate">{viewDoc.name}</span>
+    </div>
+    <div className="flex-1 p-0 overflow-auto flex justify-center items-center bg-black bg-opacity-5">
+      <div className="w-full h-full flex items-center justify-center">
+        {renderDocViewer(viewDoc)}
+         </div>
+       </div>
+     </div>
+    )}
     </div>
   );
 };
@@ -1274,17 +1279,22 @@ const AdminDocumentsPage = () => {
         </div>
       )}
       {viewDoc && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center px-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl animate-fadein overflow-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-xl">{viewDoc.name}</h3>
-              <button onClick={() => setViewDoc(null)}><X className="h-5 w-5" /></button>
-            </div>
-            <div>
-              {renderDocViewer(viewDoc)}
-            </div>
+       <div className="fixed inset-0 z-50 bg-white flex flex-col">
+         <div className="flex items-center p-4 bg-blue-700 shadow">
+           <button
+        className="mr-4 text-white flex items-center gap-2 font-bold text-lg"
+        onClick={() => setViewDoc(null)}
+         >
+          <ArrowLeft className="h-6 w-6" /> Back
+          </button>
+          <span className="text-white font-semibold truncate">{viewDoc.name}</span>
+           </div>
+           <div className="flex-1 p-0 overflow-auto flex justify-center items-center bg-black bg-opacity-5">
+           <div className="w-full h-full flex items-center justify-center">
+            {renderDocViewer(viewDoc)}
           </div>
         </div>
+       </div>
       )}
     </div>
   );
