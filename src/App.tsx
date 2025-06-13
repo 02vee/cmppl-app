@@ -909,53 +909,55 @@ const AdminDocumentsPage = () => {
     setSelected(new Set());
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
+
+  // Focus main container after modal closes or folderStack changes
   useEffect(() => {
     if (!showModal && mainRef.current) {
       mainRef.current.focus();
     }
   }, [showModal, folderStack]);
 
-  // --- CRITICAL FIX: folderStack contains only names, not ids/paths ---
-  const handleFolderOpen = (doc: TreeNode) => {
-    setFolderStack([...folderStack, doc.name]);
-    setSearch("");
+  // Keyboard shortcuts on main container
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (showModal) return;
+    if ((e.ctrlKey || e.metaKey) && selected.size > 0) {
+      if (e.key.toLowerCase() === "c") {
+        setClipboard({type: "copy", nodes: Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]});
+      }
+      if (e.key.toLowerCase() === "x") {
+        setClipboard({type: "cut", nodes: Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]});
+      }
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && clipboard) {
+      await doPaste();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+      e.preventDefault();
+      const nodes = getCurrentChildren();
+      setSelected(new Set(nodes.map(n => n.id)));
+    }
+    if (e.key === "Delete" && selected.size > 0) {
+      for (const doc of Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]) {
+        await handleDelete(doc);
+      }
+    }
+    if (e.key === "F2" && selected.size === 1) {
+      const doc = findNodeById(Array.from(selected)[0], tree);
+      if (doc) handleRename(doc);
+    }
   };
 
-  function getCurrentChildren() {
-    let node = tree;
-    for (const name of folderStack) {
-      const next = node.find(d => d.name === name && d.type === "folder");
-      if (next && next.children) node = next.children;
-      else return [];
+  function findNodeById(id: string, nodes: TreeNode[]): TreeNode | null {
+    for (const n of nodes) {
+      if (n.id === id) return n;
+      if (n.children) {
+        const found = findNodeById(id, n.children);
+        if (found) return found;
+      }
     }
-    return node;
+    return null;
   }
-  const getCurrentPrefix = () => folderStack.join("/");
 
-  // Breadcrumbs
-  let crumbs: { name: string, id: string, path: string[] }[] = [{ name: "Root", id: "root", path: [] }];
-  let node = tree;
-  let path: string[] = [];
-  for (const name of folderStack) {
-    const found = node.find(d => d.name === name && d.type === "folder");
-    if (found) {
-      path = [...path, name];
-      crumbs.push({ name: found.name, id: found.id, path: [...path] });
-      node = found.children || [];
-    }
-  }
-  const renderBreadcrumbs = () => (
-    <nav className="flex items-center mb-4">
-      {crumbs.map((c, i) => (
-        <span key={c.id} className="flex items-center">
-          <button onClick={() => setFolderStack(c.path)} className="text-blue-600 hover:underline font-bold">{c.name}</button>
-          {i < crumbs.length - 1 && <ChevronRight className="h-4 w-4 mx-1 text-gray-300" />}
-        </span>
-      ))}
-    </nav>
-  );
-
-  // Clipboard, keyboard, drag-and-drop, and modal logic as previous...
   async function doPaste() {
     if (!clipboard) return;
     setUploading(true);
@@ -972,6 +974,7 @@ const AdminDocumentsPage = () => {
     setUploading(false);
     await refresh();
   }
+
   async function copyFileOrFolder(node: TreeNode, destPath: string) {
     if (node.type === "folder") {
       const { data } = await supabase.storage.from(BUCKET).list(node.path, { limit: 1000 });
@@ -990,6 +993,7 @@ const AdminDocumentsPage = () => {
       if (data) await supabase.storage.from(BUCKET).upload(destPath, data, { upsert: false });
     }
   }
+
   function handleDragStart(doc: TreeNode) {
     dragItem.current = doc;
   }
@@ -1015,6 +1019,30 @@ const AdminDocumentsPage = () => {
     await refresh();
   }
 
+  let crumbs: { name: string, id: string, path: string[] }[] = [{ name: "Root", id: "root", path: [] }];
+  let node = tree;
+  let path: string[] = [];
+  for (const id of folderStack) {
+    const found = node.find(d => d.name === id && d.type === "folder");
+    if (found) {
+      path = [...path, id];
+      crumbs.push({ name: found.name, id: found.id, path: [...path] });
+      node = found.children || [];
+    }
+  }
+  const renderBreadcrumbs = () => (
+    <nav className="flex items-center mb-4">
+      {crumbs.map((c, i) => (
+        <span key={c.id} className="flex items-center">
+          <button onClick={() => setFolderStack(c.path)} className="text-blue-600 hover:underline font-bold">{c.name}</button>
+          {i < crumbs.length - 1 && <ChevronRight className="h-4 w-4 mx-1 text-gray-300" />}
+        </span>
+      ))}
+    </nav>
+  );
+
+  const getCurrentPrefix = () => folderStack.join("/");
+
   const renderTree = (nodes: TreeNode[]) => (
     <div className="flex flex-wrap gap-4">
       {nodes.map(doc => (
@@ -1035,17 +1063,19 @@ const AdminDocumentsPage = () => {
             <span className="font-semibold truncate">{doc.name}</span>
           </div>
           <div className="text-xs flex-1">
-            {doc.type === "file" && doc.size && <span className="block text-gray-600">{(doc.size! / 1024).toFixed(2)} KB</span>}
+            {doc.type === "file" && doc.size && <span className="block text-gray-600">{formatFileSize(doc.size)}</span>}
             {doc.lastModified && <span className="block text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
           </div>
           <div className="flex gap-1 mt-2">
             {doc.type === "file" && (
-              <button onClick={e => { e.stopPropagation(); setViewDoc(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}>View</button>
+              <>
+                <button onClick={e => { e.stopPropagation(); setViewDoc(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}>View</button>
+              </>
             )}
             <button onClick={e => { e.stopPropagation(); handleRename(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}><Edit className="h-4 w-4" /></button>
             <button onClick={e => { e.stopPropagation(); handleDelete(doc); }} className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100" tabIndex={-1}><Trash2 className="h-4 w-4" /></button>
             {doc.type === "folder" && (
-              <button onClick={e => { e.stopPropagation(); handleFolderOpen(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}><ArrowRight className="h-4 w-4" /></button>
+              <button onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.name]); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}><ArrowRight className="h-4 w-4" /></button>
             )}
           </div>
         </div>
@@ -1077,14 +1107,14 @@ const AdminDocumentsPage = () => {
   const doAdd = async () => {
     setUploading(true);
     if (showModal === "folder" && modalInput.trim()) {
-      const folderPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalInput);
+      const folderPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + modalInput;
       await uploadFile(folderPath + "/.keep", new Blob([""], { type: "text/plain" }) as any as File);
       setShowModal(null);
       setModalInput("");
       await refresh();
     }
     if (showModal === "file" && modalFile) {
-      const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalFile.name);
+      const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + modalFile.name;
       await uploadFile(path, modalFile);
       setShowModal(null);
       setModalFile(null);
@@ -1095,7 +1125,7 @@ const AdminDocumentsPage = () => {
   };
   const doRename = async () => {
     if (!modalTarget) return;
-    const newName = sanitizeName(modalInput.trim());
+    const newName = modalInput.trim();
     if (!newName || newName === modalTarget.name) { setShowModal(null); return; }
     const prefix = modalTarget.path.substring(0, modalTarget.path.lastIndexOf("/"));
     const newPath = (prefix ? prefix + "/" : "") + newName + (modalTarget.type === "folder" ? "" : "");
@@ -1162,9 +1192,16 @@ const AdminDocumentsPage = () => {
     );
   };
 
+  function getCurrentChildren() {
+    let node = tree;
+    for (const id of folderStack) {
+      const next = node.find(d => d.name === id && d.type === "folder");
+      if (next && next.children) node = next.children;
+      else return [];
+    }
+    return node;
+  }
   const docsToShow = searchDocs(getCurrentChildren(), search);
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {};
 
   return (
     <div
