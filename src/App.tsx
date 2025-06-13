@@ -917,46 +917,46 @@ const AdminDocumentsPage: React.FC = () => {
     }
   }, [showModal, folderStack]);
 
-  const handleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (showModal) return;
-    if ((e.ctrlKey || e.metaKey) && selected.size > 0) {
-      if (e.key.toLowerCase() === "c") {
-        setClipboard({type: "copy", nodes: Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]});
-      }
-      if (e.key.toLowerCase() === "x") {
-        setClipboard({type: "cut", nodes: Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]});
-      }
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && clipboard) {
-      await doPaste();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
-      e.preventDefault();
-      const nodes = getCurrentChildren();
-      setSelected(new Set(nodes.map(n => n.id)));
-    }
-    if (e.key === "Delete" && selected.size > 0) {
-      for (const doc of Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]) {
-        await handleDelete(doc);
-      }
-    }
-    if (e.key === "F2" && selected.size === 1) {
-      const doc = findNodeById(Array.from(selected)[0], tree);
-      if (doc) handleRename(doc);
-    }
+  // --- CRITICAL FIX: folderStack contains only names, not ids/paths ---
+  const handleFolderOpen = (doc: TreeNode) => {
+    setFolderStack([...folderStack, doc.name]);
+    setSearch("");
   };
 
-  function findNodeById(id: string, nodes: TreeNode[]): TreeNode | null {
-    for (const n of nodes) {
-      if (n.id === id) return n;
-      if (n.children) {
-        const found = findNodeById(id, n.children);
-        if (found) return found;
-      }
+  function getCurrentChildren() {
+    let node = tree;
+    for (const name of folderStack) {
+      const next = node.find(d => d.name === name && d.type === "folder");
+      if (next && next.children) node = next.children;
+      else return [];
     }
-    return null;
+    return node;
   }
+  const getCurrentPrefix = () => folderStack.join("/");
 
+  let crumbs: { name: string, id: string, path: string[] }[] = [{ name: "Root", id: "root", path: [] }];
+  let node = tree;
+  let path: string[] = [];
+  for (const name of folderStack) {
+    const found = node.find(d => d.name === name && d.type === "folder");
+    if (found) {
+      path = [...path, name];
+      crumbs.push({ name: found.name, id: found.id, path: [...path] });
+      node = found.children || [];
+    }
+  }
+  const renderBreadcrumbs = () => (
+    <nav className="flex items-center mb-4">
+      {crumbs.map((c, i) => (
+        <span key={c.id} className="flex items-center">
+          <button onClick={() => setFolderStack(c.path)} className="text-blue-600 hover:underline font-bold">{c.name}</button>
+          {i < crumbs.length - 1 && <ChevronRight className="h-4 w-4 mx-1 text-gray-300" />}
+        </span>
+      ))}
+    </nav>
+  );
+
+  // ...rest of the unchanged logic...
   async function doPaste() {
     if (!clipboard) return;
     setUploading(true);
@@ -1018,30 +1018,6 @@ const AdminDocumentsPage: React.FC = () => {
     await refresh();
   }
 
-  let crumbs: { name: string, id: string, path: string[] }[] = [{ name: "Root", id: "root", path: [] }];
-  let node = tree;
-  let path: string[] = [];
-  for (const id of folderStack) {
-    const found = node.find(d => d.id === id && d.type === "folder");
-    if (found) {
-      path = [...path, id];
-      crumbs.push({ name: found.name, id: found.id, path: [...path] });
-      node = found.children || [];
-    }
-  }
-  const renderBreadcrumbs = () => (
-    <nav className="flex items-center mb-4">
-      {crumbs.map((c, i) => (
-        <span key={c.id} className="flex items-center">
-          <button onClick={() => setFolderStack(c.path)} className="text-blue-600 hover:underline font-bold">{c.name}</button>
-          {i < crumbs.length - 1 && <ChevronRight className="h-4 w-4 mx-1 text-gray-300" />}
-        </span>
-      ))}
-    </nav>
-  );
-
-  const getCurrentPrefix = () => folderStack.join("/");
-
   const renderTree = (nodes: TreeNode[]) => (
     <div className="flex flex-wrap gap-4">
       {nodes.map(doc => (
@@ -1072,7 +1048,7 @@ const AdminDocumentsPage: React.FC = () => {
             <button onClick={e => { e.stopPropagation(); handleRename(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}><Edit className="h-4 w-4" /></button>
             <button onClick={e => { e.stopPropagation(); handleDelete(doc); }} className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100" tabIndex={-1}><Trash2 className="h-4 w-4" /></button>
             {doc.type === "folder" && (
-              <button onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.id]); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}><ArrowRight className="h-4 w-4" /></button>
+              <button onClick={e => { e.stopPropagation(); handleFolderOpen(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}><ArrowRight className="h-4 w-4" /></button>
             )}
           </div>
         </div>
@@ -1170,8 +1146,6 @@ const AdminDocumentsPage: React.FC = () => {
   }
 
   const renderDocViewer = (doc: TreeNode) => {
-    // If you want to support public URL viewing, use your supabase logic here
-    // This is a stub:
     const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
     const ext = doc.name.split('.').pop()?.toLowerCase() || "";
     if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
@@ -1191,15 +1165,6 @@ const AdminDocumentsPage: React.FC = () => {
     );
   };
 
-  function getCurrentChildren() {
-    let node = tree;
-    for (const id of folderStack) {
-      const next = node.find(d => d.id === id && d.type === "folder");
-      if (next && next.children) node = next.children;
-      else return [];
-    }
-    return node;
-  }
   const docsToShow = searchDocs(getCurrentChildren(), search);
 
   return (
