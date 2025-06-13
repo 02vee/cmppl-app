@@ -97,7 +97,6 @@ function estimateETA(curr: {lat: number, lng: number}, dest: {lat: number, lng: 
   return `${Math.floor(mins/60)} hr ${mins%60} min`;
 }
 
-// Utility to sanitize file/folder names
 function sanitizeName(name: string) {
   return name.replace(/[\\/]/g, "_");
 }
@@ -889,7 +888,7 @@ const AdminTrackPage = () => {
 };
 
 //---------------------- Admin Documents Page (Supabase) ----------------------//
-const AdminDocumentsPage: React.FC = () => {
+const AdminDocumentsPage = () => {
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [folderStack, setFolderStack] = useState<string[]>([]);
   const [showModal, setShowModal] = useState<null | "file" | "folder" | "edit">(null);
@@ -910,7 +909,6 @@ const AdminDocumentsPage: React.FC = () => {
     setSelected(new Set());
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
-
   useEffect(() => {
     if (!showModal && mainRef.current) {
       mainRef.current.focus();
@@ -934,6 +932,7 @@ const AdminDocumentsPage: React.FC = () => {
   }
   const getCurrentPrefix = () => folderStack.join("/");
 
+  // Breadcrumbs
   let crumbs: { name: string, id: string, path: string[] }[] = [{ name: "Root", id: "root", path: [] }];
   let node = tree;
   let path: string[] = [];
@@ -956,7 +955,7 @@ const AdminDocumentsPage: React.FC = () => {
     </nav>
   );
 
-  // ...rest of the unchanged logic...
+  // Clipboard, keyboard, drag-and-drop, and modal logic as previous...
   async function doPaste() {
     if (!clipboard) return;
     setUploading(true);
@@ -973,7 +972,6 @@ const AdminDocumentsPage: React.FC = () => {
     setUploading(false);
     await refresh();
   }
-
   async function copyFileOrFolder(node: TreeNode, destPath: string) {
     if (node.type === "folder") {
       const { data } = await supabase.storage.from(BUCKET).list(node.path, { limit: 1000 });
@@ -992,7 +990,6 @@ const AdminDocumentsPage: React.FC = () => {
       if (data) await supabase.storage.from(BUCKET).upload(destPath, data, { upsert: false });
     }
   }
-
   function handleDragStart(doc: TreeNode) {
     dragItem.current = doc;
   }
@@ -1166,6 +1163,8 @@ const AdminDocumentsPage: React.FC = () => {
   };
 
   const docsToShow = searchDocs(getCurrentChildren(), search);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {};
 
   return (
     <div
