@@ -174,11 +174,13 @@ function buildTree(files: TreeNode[]): TreeNode[] {
   // Sort folders before files, newest first (by lastModified, file first)
   function sortRecursive(nodes: TreeNode[]) {
     nodes.sort((a, b) => {
+      // Folders first, then files (optional, comment if you want strict date sort)
       if (a.type === "folder" && b.type !== "folder") return -1;
       if (a.type !== "folder" && b.type === "folder") return 1;
+      // Newest first
       const aTime = a.lastModified ? new Date(a.lastModified).getTime() : 0;
       const bTime = b.lastModified ? new Date(b.lastModified).getTime() : 0;
-      return bTime - aTime;
+      return bTime - aTime; // descending order (newest first)
     });
     nodes.forEach(n => { if (n.children) sortRecursive(n.children); });
   }
