@@ -5,6 +5,8 @@ import {
   Truck, MapPin, Lock, Plus, X, ArrowLeft, ArrowRight, RefreshCw, Menu
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import { supabase, uploadFile, uploadFilesWithFolders, deleteFileOrFolder, moveFileOrFolder, listTree, buildTree, sanitizeName, formatFileSize } from "./supabaseHelpers"; // adjust the import path as needed
+
 
 // ------- SUPABASE SETUP -------
 const supabase = createClient(
@@ -920,7 +922,7 @@ const AdminDocumentsPage = () => {
   const [showModal, setShowModal] = useState<null | "file" | "folder" | "edit">(null);
   const [modalTarget, setModalTarget] = useState<TreeNode | null>(null);
   const [modalInput, setModalInput] = useState<string>("");
-  const [modalFile, setModalFile] = useState<File | null>(null);
+  const [modalFile, setModalFile] = useState<FileList | null>(null); // changed for multiple upload
   const [search, setSearch] = useState<string>("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewDoc, setViewDoc] = useState<TreeNode | null>(null);
@@ -936,14 +938,12 @@ const AdminDocumentsPage = () => {
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
 
-  // Focus main container after modal closes or folderStack changes
   useEffect(() => {
     if (!showModal && mainRef.current) {
       mainRef.current.focus();
     }
   }, [showModal, folderStack]);
 
-  // Keyboard shortcuts on main container
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (showModal) return;
     if ((e.ctrlKey || e.metaKey) && selected.size > 0) {
@@ -1003,20 +1003,20 @@ const AdminDocumentsPage = () => {
 
   async function copyFileOrFolder(node: TreeNode, destPath: string) {
     if (node.type === "folder") {
-      const { data } = await supabase.storage.from(BUCKET).list(node.path, { limit: 1000 });
+      const { data } = await supabase.storage.from("documents").list(node.path, { limit: 1000 });
       for (const item of data || []) {
         const childPath = `${node.path}/${item.name}`;
         const childDestPath = `${destPath}/${item.name}`;
         if (item.metadata && item.metadata.mimetype) {
-          const { data: fileData } = await supabase.storage.from(BUCKET).download(childPath);
-          if (fileData) await supabase.storage.from(BUCKET).upload(childDestPath, fileData, { upsert: false });
+          const { data: fileData } = await supabase.storage.from("documents").download(childPath);
+          if (fileData) await supabase.storage.from("documents").upload(childDestPath, fileData, { upsert: false });
         } else {
           await copyFileOrFolder({ ...node, path: childPath, name: item.name, type: "folder" }, childDestPath);
         }
       }
     } else {
-      const { data } = await supabase.storage.from(BUCKET).download(node.path);
-      if (data) await supabase.storage.from(BUCKET).upload(destPath, data, { upsert: false });
+      const { data } = await supabase.storage.from("documents").download(node.path);
+      if (data) await supabase.storage.from("documents").upload(destPath, data, { upsert: false });
     }
   }
 
@@ -1139,9 +1139,12 @@ const AdminDocumentsPage = () => {
       setModalInput("");
       await refresh();
     }
+    // MULTIPLE FILE UPLOAD
     if (showModal === "file" && modalFile) {
-      const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalFile.name);
-      await uploadFile(path, modalFile);
+      for (const file of Array.from(modalFile)) {
+        const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(file.name);
+        await uploadFile(path, file);
+      }
       setShowModal(null);
       setModalFile(null);
       setModalInput("");
@@ -1149,6 +1152,7 @@ const AdminDocumentsPage = () => {
     }
     setUploading(false);
   };
+
   const doRename = async () => {
     if (!modalTarget) return;
     const newName = modalInput.trim();
@@ -1199,7 +1203,7 @@ const AdminDocumentsPage = () => {
   }
 
   const renderDocViewer = (doc: TreeNode) => {
-    const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
+    const url = supabase.storage.from("documents").getPublicUrl(doc.path).data.publicUrl;
     const ext = doc.name.split('.').pop()?.toLowerCase() || "";
     if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
       return <img src={url} alt={doc.name} className="max-h-[70vh] max-w-full mx-auto rounded shadow" />;
@@ -1237,14 +1241,12 @@ const AdminDocumentsPage = () => {
       onKeyDown={handleKeyDown}
     >
       <div className="max-w-6xl mx-auto">
-        <Link to="/admin" className="inline-flex items-center text-blue-600 mb-4 hover:underline">
-          <span className="mr-1">
-            <svg className="h-5 w-5 inline" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7m-9 2v8a2 2 0 002 2h4a2 2 0 002-2v-8m-6 0H5.414a2 2 0 00-1.414.586l-.293.293a2 2 0 000 2.828l.293.293A2 2 0 005.414 15H6"></path>
-            </svg>
-          </span>
-          Back to Dashboard
-        </Link>
+        <button
+          className="inline-flex items-center text-blue-600 mb-4 hover:underline"
+          onClick={() => window.history.back()}
+        >
+          <ArrowLeft className="mr-1 h-5 w-5" /> Back to Dashboard
+        </button>
         <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
           <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700"><FolderIcon className="mr-2 h-6 w-6" /> Manage Documents</h2>
           {renderBreadcrumbs()}
@@ -1285,11 +1287,11 @@ const AdminDocumentsPage = () => {
         <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center px-4">
           <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md animate-fadein">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-xl">{showModal === "edit" ? "Rename" : showModal === "file" ? "Upload File" : "New Folder"}</h3>
+              <h3 className="font-bold text-xl">{showModal === "edit" ? "Rename" : showModal === "file" ? "Upload File(s)" : "New Folder"}</h3>
               <button onClick={() => setShowModal(null)}><X className="h-5 w-5" /></button>
             </div>
             {showModal === "file" ? (
-              <input type="file" onChange={e => setModalFile(e.target.files?.[0] || null)} className="mb-4" />
+              <input type="file" multiple onChange={e => setModalFile(e.target.files)} className="mb-4" />
             ) : (
               <input type="text" className="w-full border-2 rounded-lg p-2 mb-4" value={modalInput} onChange={e => setModalInput(e.target.value)} placeholder="Name" />
             )}
