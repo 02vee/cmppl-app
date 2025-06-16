@@ -5,8 +5,6 @@ import {
   Truck, MapPin, Lock, Plus, X, ArrowLeft, ArrowRight, RefreshCw, Menu
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
-import { supabase, uploadFile, uploadFilesWithFolders, deleteFileOrFolder, moveFileOrFolder, listTree, buildTree, sanitizeName, formatFileSize } from "./supabaseHelpers"; // adjust the import path as needed
-
 
 // ------- SUPABASE SETUP -------
 const supabase = createClient(
