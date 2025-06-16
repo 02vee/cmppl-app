@@ -586,7 +586,7 @@ const DocumentsPage = () => {
             {doc.type === "folder"
               ? <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
               : <FileIcon className="h-6 w-6 text-blue-500 mr-2" />}
-            <span className="font-medium text-[11px] break-all w-full block">{doc.name}</span>
+            <span className="font-medium text-[10px] break-all w-full block">{doc.name}</span>
           </div>
           <div className="text-xs flex-1">
             {doc.type === "file" && doc.size && <span className="block text-gray-600">{formatFileSize(doc.size)}</span>}
@@ -1086,7 +1086,7 @@ const AdminDocumentsPage = () => {
             {doc.type === "folder"
               ? <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
               : <FileIcon className="h-6 w-6 text-blue-500 mr-2" />}
-            <span className="font-medium text-[11px] break-all w-full block">{doc.name}</span>
+            <span className="font-medium text-[10px] break-all w-full block">{doc.name}</span>
           </div>
           <div className="text-xs flex-1">
             {doc.type === "file" && doc.size && <span className="block text-gray-600">{formatFileSize(doc.size)}</span>}
