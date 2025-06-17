@@ -943,14 +943,13 @@ const AdminDocumentsPage = () => {
     }
   }, [showModal, folderStack]);
 
-  // --- DRAG & DROP SUPPORT: Drag event handlers ---
-  const handleDropZoneDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+  // --- DRAG & DROP SUPPORT: Drop anywhere on the page ---
+  const handleGlobalDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setUploading(true);
     let allFiles: File[] = [];
 
-    // Support for folders (webkitGetAsEntry)
     if (e.dataTransfer.items && e.dataTransfer.items[0] && 'webkitGetAsEntry' in e.dataTransfer.items[0]) {
       const traverseFileTree = async (item: any, path = ""): Promise<File[]> => {
         return new Promise<File[]>((resolve) => {
@@ -993,8 +992,7 @@ const AdminDocumentsPage = () => {
     await refresh();
   };
 
-  // --- DRAG & DROP SUPPORT: Drag event handlers ---
-  const handleDropZoneDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleGlobalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
   };
@@ -1293,6 +1291,9 @@ const AdminDocumentsPage = () => {
       tabIndex={0}
       ref={mainRef}
       onKeyDown={handleKeyDown}
+      // --- DRAG & DROP SUPPORT: Drop anywhere on the page ---
+      onDrop={handleGlobalDrop}
+      onDragOver={handleGlobalDragOver}
     >
       <div className="max-w-6xl mx-auto">
         <button
@@ -1304,16 +1305,6 @@ const AdminDocumentsPage = () => {
         <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
           <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700"><FolderIcon className="mr-2 h-6 w-6" /> Manage Documents</h2>
           {renderBreadcrumbs()}
-          {/* --- DRAG & DROP SUPPORT: Dropzone area --- */}
-          <div
-            onDrop={handleDropZoneDrop}
-            onDragOver={handleDropZoneDragOver}
-            className="border-2 border-dashed border-blue-400 rounded-xl p-6 mb-4 text-center bg-blue-50 hover:bg-blue-100 transition"
-          >
-            <strong>Drag and drop files or folders here</strong>
-            <br />
-            (Supports multiple files and full folders. You can still use the Upload buttons below.)
-          </div>
           <div className="mb-6 flex flex-wrap gap-3">
             <button className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center gap-1 font-semibold shadow transition" onClick={() => handleAdd("folder")}><Plus className="h-4 w-4" />New Folder</button>
             <button className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center gap-1 font-semibold shadow transition" onClick={() => handleAdd("file")}><Plus className="h-4 w-4" />Upload File</button>
