@@ -210,9 +210,10 @@ function buildTree(files: TreeNode[]): TreeNode[] {
 async function uploadFile(path: string, file: File) {
   await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
 }
-async function uploadFilesWithFolders(prefix: string, files: FileList) {
+// --- DRAG & DROP SUPPORT: Accept FileList or File[] ---
+async function uploadFilesWithFolders(prefix: string, files: FileList | File[]) {
   for (const file of Array.from(files)) {
-    let fullPath = file.webkitRelativePath || file.name;
+    let fullPath = (file as any).webkitRelativePath || file.name;
     if (prefix) fullPath = prefix + "/" + fullPath;
     await uploadFile(fullPath, file);
   }
@@ -920,7 +921,7 @@ const AdminDocumentsPage = () => {
   const [showModal, setShowModal] = useState<null | "file" | "folder" | "edit">(null);
   const [modalTarget, setModalTarget] = useState<TreeNode | null>(null);
   const [modalInput, setModalInput] = useState<string>("");
-  const [modalFile, setModalFile] = useState<FileList | null>(null); // changed for multiple upload
+  const [modalFile, setModalFile] = useState<FileList | null>(null);
   const [search, setSearch] = useState<string>("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewDoc, setViewDoc] = useState<TreeNode | null>(null);
@@ -941,6 +942,62 @@ const AdminDocumentsPage = () => {
       mainRef.current.focus();
     }
   }, [showModal, folderStack]);
+
+  // --- DRAG & DROP SUPPORT: Drag event handlers ---
+  const handleDropZoneDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setUploading(true);
+    let allFiles: File[] = [];
+
+    // Support for folders (webkitGetAsEntry)
+    if (e.dataTransfer.items && e.dataTransfer.items[0] && 'webkitGetAsEntry' in e.dataTransfer.items[0]) {
+      const traverseFileTree = async (item: any, path = ""): Promise<File[]> => {
+        return new Promise<File[]>((resolve) => {
+          if (item.isFile) {
+            item.file((file: File) => {
+              Object.defineProperty(file, 'webkitRelativePath', {
+                value: path + file.name,
+                writable: false
+              });
+              resolve([file]);
+            });
+          } else if (item.isDirectory) {
+            const dirReader = item.createReader();
+            dirReader.readEntries(async (entries: any) => {
+              let files: File[] = [];
+              for (const entry of entries) {
+                files = files.concat(await traverseFileTree(entry, path + item.name + "/"));
+              }
+              resolve(files);
+            });
+          }
+        });
+      };
+      let files: File[] = [];
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        const entry = e.dataTransfer.items[i].webkitGetAsEntry();
+        if (entry) {
+          files = files.concat(await traverseFileTree(entry, ""));
+        }
+      }
+      allFiles = files;
+    } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      allFiles = Array.from(e.dataTransfer.files);
+    }
+
+    if (allFiles.length > 0) {
+      await uploadFilesWithFolders(getCurrentPrefix(), allFiles as any as FileList);
+    }
+    setUploading(false);
+    await refresh();
+  };
+
+  // --- DRAG & DROP SUPPORT: Drag event handlers ---
+  const handleDropZoneDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (showModal) return;
@@ -1001,27 +1058,27 @@ const AdminDocumentsPage = () => {
 
   async function copyFileOrFolder(node: TreeNode, destPath: string) {
     if (node.type === "folder") {
-      const { data } = await supabase.storage.from("documents").list(node.path, { limit: 1000 });
+      const { data } = await supabase.storage.from(BUCKET).list(node.path, { limit: 1000 });
       for (const item of data || []) {
         const childPath = `${node.path}/${item.name}`;
         const childDestPath = `${destPath}/${item.name}`;
         if (item.metadata && item.metadata.mimetype) {
-          const { data: fileData } = await supabase.storage.from("documents").download(childPath);
-          if (fileData) await supabase.storage.from("documents").upload(childDestPath, fileData, { upsert: false });
+          const { data: fileData } = await supabase.storage.from(BUCKET).download(childPath);
+          if (fileData) await supabase.storage.from(BUCKET).upload(childDestPath, fileData, { upsert: false });
         } else {
           await copyFileOrFolder({ ...node, path: childPath, name: item.name, type: "folder" }, childDestPath);
         }
       }
     } else {
-      const { data } = await supabase.storage.from("documents").download(node.path);
-      if (data) await supabase.storage.from("documents").upload(destPath, data, { upsert: false });
+      const { data } = await supabase.storage.from(BUCKET).download(node.path);
+      if (data) await supabase.storage.from(BUCKET).upload(destPath, data, { upsert: false });
     }
   }
 
   function handleDragStart(doc: TreeNode) {
     dragItem.current = doc;
   }
-  async function handleDrop(targetDoc: TreeNode | null) {
+  async function handleCardDrop(targetDoc: TreeNode | null) {
     if (!dragItem.current) return;
     let destPrefix = getCurrentPrefix();
     if (targetDoc && targetDoc.type === "folder") {
@@ -1078,7 +1135,7 @@ const AdminDocumentsPage = () => {
           draggable
           onDragStart={() => handleDragStart(doc)}
           onDragOver={e => e.preventDefault()}
-          onDrop={e => { e.preventDefault(); handleDrop(doc); }}
+          onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
         >
           <div className="flex items-center mb-2">
             {doc.type === "folder"
@@ -1137,7 +1194,6 @@ const AdminDocumentsPage = () => {
       setModalInput("");
       await refresh();
     }
-    // MULTIPLE FILE UPLOAD
     if (showModal === "file" && modalFile) {
       for (const file of Array.from(modalFile)) {
         const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(file.name);
@@ -1201,7 +1257,7 @@ const AdminDocumentsPage = () => {
   }
 
   const renderDocViewer = (doc: TreeNode) => {
-    const url = supabase.storage.from("documents").getPublicUrl(doc.path).data.publicUrl;
+    const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
     const ext = doc.name.split('.').pop()?.toLowerCase() || "";
     if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
       return <img src={url} alt={doc.name} className="max-h-[70vh] max-w-full mx-auto rounded shadow" />;
@@ -1248,6 +1304,16 @@ const AdminDocumentsPage = () => {
         <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
           <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700"><FolderIcon className="mr-2 h-6 w-6" /> Manage Documents</h2>
           {renderBreadcrumbs()}
+          {/* --- DRAG & DROP SUPPORT: Dropzone area --- */}
+          <div
+            onDrop={handleDropZoneDrop}
+            onDragOver={handleDropZoneDragOver}
+            className="border-2 border-dashed border-blue-400 rounded-xl p-6 mb-4 text-center bg-blue-50 hover:bg-blue-100 transition"
+          >
+            <strong>Drag and drop files or folders here</strong>
+            <br />
+            (Supports multiple files and full folders. You can still use the Upload buttons below.)
+          </div>
           <div className="mb-6 flex flex-wrap gap-3">
             <button className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center gap-1 font-semibold shadow transition" onClick={() => handleAdd("folder")}><Plus className="h-4 w-4" />New Folder</button>
             <button className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center gap-1 font-semibold shadow transition" onClick={() => handleAdd("file")}><Plus className="h-4 w-4" />Upload File</button>
