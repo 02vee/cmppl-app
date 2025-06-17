@@ -927,6 +927,8 @@ const AdminDocumentsPage = () => {
   const [viewDoc, setViewDoc] = useState<TreeNode | null>(null);
   const [uploading, setUploading] = useState(false);
   const [clipboard, setClipboard] = useState<{type: "copy" | "cut", nodes: TreeNode[]} | null>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const dragItem = useRef<TreeNode | null>(null);
   const mainRef = useRef<HTMLDivElement>(null);
 
@@ -1122,6 +1124,30 @@ const AdminDocumentsPage = () => {
 
   const getCurrentPrefix = () => folderStack.join("/");
 
+  // --- SORTING ---
+  function sortDocs(nodes: TreeNode[]): TreeNode[] {
+    const sorted = [...nodes].sort((a, b) => {
+      // Folders first (optional)
+      if (a.type === 'folder' && b.type !== 'folder') return -1;
+      if (a.type !== 'folder' && b.type === 'folder') return 1;
+      let comp = 0;
+      if (sortBy === 'name') {
+        comp = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      } else if (sortBy === 'size') {
+        comp = (a.size || 0) - (b.size || 0);
+      } else if (sortBy === 'date') {
+        comp = (new Date(a.lastModified || 0).getTime()) - (new Date(b.lastModified || 0).getTime());
+      }
+      if (sortOrder === 'desc') comp = -comp;
+      return comp;
+    });
+    // Recursively sort children
+    return sorted.map(n => n.type === 'folder' && n.children
+      ? { ...n, children: sortDocs(n.children) }
+      : n
+    );
+  }
+
   const renderTree = (nodes: TreeNode[]) => (
     <div className="flex flex-wrap gap-4">
       {nodes.map(doc => (
@@ -1283,7 +1309,8 @@ const AdminDocumentsPage = () => {
     }
     return node;
   }
-  const docsToShow = searchDocs(getCurrentChildren(), search);
+  // --- Apply search and sort ---
+  const docsToShow = sortDocs(searchDocs(getCurrentChildren(), search));
 
   return (
     <div
@@ -1291,7 +1318,6 @@ const AdminDocumentsPage = () => {
       tabIndex={0}
       ref={mainRef}
       onKeyDown={handleKeyDown}
-      // --- DRAG & DROP SUPPORT: Drop anywhere on the page ---
       onDrop={handleGlobalDrop}
       onDragOver={handleGlobalDragOver}
     >
@@ -1305,6 +1331,27 @@ const AdminDocumentsPage = () => {
         <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
           <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700"><FolderIcon className="mr-2 h-6 w-6" /> Manage Documents</h2>
           {renderBreadcrumbs()}
+          {/* --- Sort Filter --- */}
+          <div className="flex items-center gap-3 mb-4">
+            <label className="font-semibold">Sort by:</label>
+            <select
+              className="border rounded px-2 py-1"
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value as any)}
+            >
+              <option value="name">Name</option>
+              <option value="date">Last Modified</option>
+              <option value="size">Size</option>
+            </select>
+            <select
+              className="border rounded px-2 py-1"
+              value={sortOrder}
+              onChange={e => setSortOrder(e.target.value as any)}
+            >
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
           <div className="mb-6 flex flex-wrap gap-3">
             <button className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center gap-1 font-semibold shadow transition" onClick={() => handleAdd("folder")}><Plus className="h-4 w-4" />New Folder</button>
             <button className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center gap-1 font-semibold shadow transition" onClick={() => handleAdd("file")}><Plus className="h-4 w-4" />Upload File</button>
