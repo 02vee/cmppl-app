@@ -1285,56 +1285,59 @@ const AdminDocumentsPage = () => {
 
   // --- DRAG & DROP SUPPORT: Drop anywhere on the page ---
   const handleGlobalDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setUploading(true);
-    let allFiles: File[] = [];
+  e.preventDefault();
+  e.stopPropagation();
+  setUploading(true);
 
-    if (e.dataTransfer.items && e.dataTransfer.items[0] && 'webkitGetAsEntry' in e.dataTransfer.items[0]) {
-      const traverseFileTree = async (item: any, path = ""): Promise<File[]> => {
-        return new Promise<File[]>((resolve) => {
-          if (item.isFile) {
-            item.file((file: File) => {
-              Object.defineProperty(file, 'webkitRelativePath', {
-                value: path + file.name,
-                writable: false
-              });
-              resolve([file]);
-            });
-          } else if (item.isDirectory) {
-            const dirReader = item.createReader();
-            dirReader.readEntries(async (entries: any) => {
-              let files: File[] = [];
-              for (const entry of entries) {
-                files = files.concat(await traverseFileTree(entry, path + item.name + "/"));
-              }
-              resolve(files);
-            });
-          }
+  let allFiles: File[] = [];
+
+  // Helper to recursively traverse directories
+  const traverseFileTree = async (item: any, path = ""): Promise<File[]> => {
+    return new Promise<File[]>((resolve) => {
+      if (item.isFile) {
+        item.file((file: File) => {
+          // Polyfill webkitRelativePath for each file so folders are preserved
+          Object.defineProperty(file, 'webkitRelativePath', {
+            value: path + file.name,
+            writable: false
+          });
+          resolve([file]);
         });
-      };
-      let files: File[] = [];
-      for (let i = 0; i < e.dataTransfer.items.length; i++) {
-        const entry = e.dataTransfer.items[i].webkitGetAsEntry();
-        if (entry) {
-          files = files.concat(await traverseFileTree(entry, ""));
-        }
+      } else if (item.isDirectory) {
+        const dirReader = item.createReader();
+        dirReader.readEntries(async (entries: any) => {
+          let files: File[] = [];
+          for (const entry of entries) {
+            files = files.concat(await traverseFileTree(entry, path + item.name + "/"));
+          }
+          resolve(files);
+        });
       }
-      allFiles = files;
-    } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      allFiles = Array.from(e.dataTransfer.files);
-    }
-    if (allFiles.length > 0) {
-      await uploadFilesWithFolders(getCurrentPrefix(), allFiles as any as FileList);
-    }
-    setUploading(false);
-    await refresh();
+    });
   };
 
-  const handleGlobalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
+  // If user drops files/folders from device
+  if (e.dataTransfer.items && e.dataTransfer.items.length > 0 && 'webkitGetAsEntry' in e.dataTransfer.items[0]) {
+    let files: File[] = [];
+    for (let i = 0; i < e.dataTransfer.items.length; i++) {
+      const entry = e.dataTransfer.items[i].webkitGetAsEntry();
+      if (entry) {
+        files = files.concat(await traverseFileTree(entry, ""));
+      }
+    }
+    allFiles = files;
+  } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    allFiles = Array.from(e.dataTransfer.files);
+  }
+
+  // Now upload ALL files
+  if (allFiles.length > 0) {
+    await uploadFilesWithFolders(getCurrentPrefix(), allFiles);
+  }
+
+  setUploading(false);
+  await refresh();
+};
 
   // --- Main Render ---
   return (
