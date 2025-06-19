@@ -1338,6 +1338,10 @@ const AdminDocumentsPage = () => {
   setUploading(false);
   await refresh();
 };
+  const handleGlobalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
   // --- Main Render ---
   return (
