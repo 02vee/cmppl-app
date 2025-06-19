@@ -97,6 +97,19 @@ function estimateETA(curr: {lat: number, lng: number}, dest: {lat: number, lng: 
   return `${Math.floor(mins/60)} hr ${mins%60} min`;
 }
 
+const SORT_OPTIONS = [
+  { value: "name-asc", label: "Name (A-Z)" },
+  { value: "name-desc", label: "Name (Z-A)" },
+  { value: "date-desc", label: "Last Modified (Newest)" },
+  { value: "date-asc", label: "Last Modified (Oldest)" },
+  { value: "size-desc", label: "Size (Largest)" },
+  { value: "size-asc", label: "Size (Smallest)" }
+];
+
+function getInitialSort() {
+  return localStorage.getItem("adminDocsSort") || "date-desc";
+}
+
 function sanitizeName(name: string) {
   return name.replace(/[\\/]/g, "_");
 }
@@ -193,10 +206,8 @@ function buildTree(files: TreeNode[]): TreeNode[] {
   // Now sort by lastModified: Newest first, folders/files mixed or folders first
   function sortRecursive(nodes: TreeNode[]) {
     nodes.sort((a, b) => {
-      // Folders first, then files (optional: comment out next two lines to mix by date only)
       if (a.type === "folder" && b.type !== "folder") return -1;
       if (a.type !== "folder" && b.type === "folder") return 1;
-      // Newest first
       const aTime = a.lastModified ? new Date(a.lastModified).getTime() : 0;
       const bTime = b.lastModified ? new Date(b.lastModified).getTime() : 0;
       return bTime - aTime;
@@ -210,7 +221,6 @@ function buildTree(files: TreeNode[]): TreeNode[] {
 async function uploadFile(path: string, file: File) {
   await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
 }
-// --- DRAG & DROP SUPPORT: Accept FileList or File[] ---
 async function uploadFilesWithFolders(prefix: string, files: FileList | File[]) {
   for (const file of Array.from(files)) {
     let fullPath = (file as any).webkitRelativePath || file.name;
@@ -220,16 +230,11 @@ async function uploadFilesWithFolders(prefix: string, files: FileList | File[]) 
 }
 async function deleteFileOrFolder(path: string, isFolder: boolean) {
   if (!isFolder) {
-    // Delete single file
     const { error } = await supabase.storage.from(BUCKET).remove([path]);
     if (error) alert(`Failed to delete file: ${path}\n${error.message}`);
     return;
   }
-
-  // For folders: recursively gather all file paths (including .keep files)
   let filesToDelete: string[] = [];
-
-  // Helper: gather all file paths under the given prefix (folder)
   const gatherFiles = async (prefix: string) => {
     const { data, error } = await supabase.storage.from(BUCKET).list(prefix, { limit: 1000 });
     if (error) {
@@ -242,28 +247,17 @@ async function deleteFileOrFolder(path: string, isFolder: boolean) {
       if (item.metadata && item.metadata.mimetype) {
         filesToDelete.push(itemPath);
       } else {
-        // If it's a folder marker, add .keep if exists
         if (item.name === ".keep") filesToDelete.push(itemPath);
-        // Recurse into subfolder
         await gatherFiles(itemPath);
       }
     }
   };
-
   await gatherFiles(path);
-
-  // Also add the main folder's .keep if present (for empty folders)
   const { data: folderData } = await supabase.storage.from(BUCKET).list(path, { limit: 1000 });
   if (folderData && folderData.find(item => item.name === ".keep")) {
     filesToDelete.push(path + "/.keep");
   }
-
-  if (filesToDelete.length === 0) {
-    // Nothing to delete
-    return;
-  }
-
-  // Remove all collected files
+  if (filesToDelete.length === 0) return;
   const { error: delError } = await supabase.storage.from(BUCKET).remove(filesToDelete);
   if (delError) {
     alert("Some files could not be deleted: " + delError.message);
@@ -273,24 +267,19 @@ async function deleteFileOrFolder(path: string, isFolder: boolean) {
 async function moveFileOrFolder(oldPath: string, newPath: string, isFolder = false) {
   if (oldPath === newPath) return;
   if (!isFolder) {
-    // Download file from old path
     const { data, error } = await supabase.storage.from(BUCKET).download(oldPath);
     if (!data || error) {
       alert("Failed to download file for renaming.");
       return;
     }
-    // Overwrite destination always
     await supabase.storage.from(BUCKET).remove([newPath]);
-    // Upload to new path
     const { error: uploadError } = await supabase.storage.from(BUCKET).upload(newPath, data, { upsert: true });
     if (uploadError) {
       alert("Failed to upload file to new name. Rename aborted.");
       return;
     }
-    // Always remove old
     await supabase.storage.from(BUCKET).remove([oldPath]);
   } else {
-    // Folder: recursively move all children first
     const { data: items, error } = await supabase.storage.from(BUCKET).list(oldPath, { limit: 1000 });
     if (error) return;
     for (const item of items || []) {
@@ -309,7 +298,6 @@ async function moveFileOrFolder(oldPath: string, newPath: string, isFolder = fal
         await moveFileOrFolder(oldItemPath, newItemPath, true);
       }
     }
-    // After all items are moved, delete the old folder itself (the empty "folder marker")
     await supabase.storage.from(BUCKET).remove([oldPath]);
   }
 }
@@ -927,10 +915,16 @@ const AdminDocumentsPage = () => {
   const [viewDoc, setViewDoc] = useState<TreeNode | null>(null);
   const [uploading, setUploading] = useState(false);
   const [clipboard, setClipboard] = useState<{type: "copy" | "cut", nodes: TreeNode[]} | null>(null);
-  const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sort, setSort] = useState(getInitialSort());
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const dragItem = useRef<TreeNode | null>(null);
   const mainRef = useRef<HTMLDivElement>(null);
+
+  const [sortBy, sortOrder] = sort.split("-") as ["name"|"date"|"size", "asc"|"desc"];
+
+  useEffect(() => {
+    localStorage.setItem("adminDocsSort", sort);
+  }, [sort]);
 
   const refresh = useCallback(async () => {
     const docs = await listTree();
@@ -945,60 +939,7 @@ const AdminDocumentsPage = () => {
     }
   }, [showModal, folderStack]);
 
-  // --- DRAG & DROP SUPPORT: Drop anywhere on the page ---
-  const handleGlobalDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setUploading(true);
-    let allFiles: File[] = [];
-
-    if (e.dataTransfer.items && e.dataTransfer.items[0] && 'webkitGetAsEntry' in e.dataTransfer.items[0]) {
-      const traverseFileTree = async (item: any, path = ""): Promise<File[]> => {
-        return new Promise<File[]>((resolve) => {
-          if (item.isFile) {
-            item.file((file: File) => {
-              Object.defineProperty(file, 'webkitRelativePath', {
-                value: path + file.name,
-                writable: false
-              });
-              resolve([file]);
-            });
-          } else if (item.isDirectory) {
-            const dirReader = item.createReader();
-            dirReader.readEntries(async (entries: any) => {
-              let files: File[] = [];
-              for (const entry of entries) {
-                files = files.concat(await traverseFileTree(entry, path + item.name + "/"));
-              }
-              resolve(files);
-            });
-          }
-        });
-      };
-      let files: File[] = [];
-      for (let i = 0; i < e.dataTransfer.items.length; i++) {
-        const entry = e.dataTransfer.items[i].webkitGetAsEntry();
-        if (entry) {
-          files = files.concat(await traverseFileTree(entry, ""));
-        }
-      }
-      allFiles = files;
-    } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      allFiles = Array.from(e.dataTransfer.files);
-    }
-
-    if (allFiles.length > 0) {
-      await uploadFilesWithFolders(getCurrentPrefix(), allFiles as any as FileList);
-    }
-    setUploading(false);
-    await refresh();
-  };
-
-  const handleGlobalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
+  // Keyboard shortcuts (cut/copy/paste/delete/rename/select all)
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (showModal) return;
     if ((e.ctrlKey || e.metaKey) && selected.size > 0) {
@@ -1124,10 +1065,8 @@ const AdminDocumentsPage = () => {
 
   const getCurrentPrefix = () => folderStack.join("/");
 
-  // --- SORTING ---
   function sortDocs(nodes: TreeNode[]): TreeNode[] {
     const sorted = [...nodes].sort((a, b) => {
-      // Folders first (optional)
       if (a.type === 'folder' && b.type !== 'folder') return -1;
       if (a.type !== 'folder' && b.type === 'folder') return 1;
       let comp = 0;
@@ -1141,12 +1080,83 @@ const AdminDocumentsPage = () => {
       if (sortOrder === 'desc') comp = -comp;
       return comp;
     });
-    // Recursively sort children
     return sorted.map(n => n.type === 'folder' && n.children
       ? { ...n, children: sortDocs(n.children) }
       : n
     );
   }
+
+  function searchDocs(nodes: TreeNode[], q: string): TreeNode[] {
+    if (!q.trim()) return nodes;
+    q = q.toLowerCase();
+    const filterTree = (docs: TreeNode[]): TreeNode[] =>
+      docs
+        .map(doc => {
+          if (doc.type === "folder" && doc.children) {
+            const children = filterTree(doc.children);
+            if (children.length > 0 || doc.name.toLowerCase().includes(q)) {
+              return { ...doc, children };
+            }
+            return null;
+          } else if (doc.name.toLowerCase().includes(q)) {
+            return doc;
+          }
+          return null;
+        })
+        .filter(Boolean) as TreeNode[];
+    return filterTree(nodes);
+  }
+
+  function getCurrentChildren() {
+    let node = tree;
+    for (const id of folderStack) {
+      const next = node.find(d => d.name === id && d.type === "folder");
+      if (next && next.children) node = next.children;
+      else return [];
+    }
+    return node;
+  }
+  const docsToShow = sortDocs(searchDocs(getCurrentChildren(), search));
+
+  const renderSortDropdown = () => (
+    <div className="relative">
+      <button
+        className="flex items-center border px-3 py-2 rounded-lg bg-white shadow hover:bg-blue-100"
+        onClick={() => setSortDropdownOpen(o => !o)}
+        type="button"
+      >
+        Sort
+        <ChevronRight className={`ml-1 h-4 w-4 transition-transform ${sortDropdownOpen ? "rotate-90" : ""}`} />
+      </button>
+      {sortDropdownOpen && (
+        <div
+          className="absolute right-0 mt-2 w-56 bg-white border rounded-xl shadow-lg z-20"
+          onMouseLeave={() => setSortDropdownOpen(false)}
+        >
+          <ul className="py-2">
+            {SORT_OPTIONS.map(opt => (
+              <li key={opt.value}>
+                <label className="flex items-center px-4 py-2 cursor-pointer hover:bg-blue-50">
+                  <input
+                    type="radio"
+                    name="sort"
+                    value={opt.value}
+                    checked={sort === opt.value}
+                    onChange={() => {
+                      setSort(opt.value);
+                      setSortDropdownOpen(false);
+                    }}
+                    className="mr-2"
+                  />
+                  {opt.label}
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 
   const renderTree = (nodes: TreeNode[]) => (
     <div className="flex flex-wrap gap-4">
@@ -1173,9 +1183,7 @@ const AdminDocumentsPage = () => {
           </div>
           <div className="flex gap-1 mt-2">
             {doc.type === "file" && (
-              <>
-                <button onClick={e => { e.stopPropagation(); setViewDoc(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}>View</button>
-              </>
+              <button onClick={e => { e.stopPropagation(); setViewDoc(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}>View</button>
             )}
             <button onClick={e => { e.stopPropagation(); handleRename(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}><Edit className="h-4 w-4" /></button>
             <button onClick={e => { e.stopPropagation(); handleDelete(doc); }} className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100" tabIndex={-1}><Trash2 className="h-4 w-4" /></button>
@@ -1187,98 +1195,6 @@ const AdminDocumentsPage = () => {
       ))}
     </div>
   );
-
-  const handleSelect = (e: React.MouseEvent, id: string) => {
-    if (e.ctrlKey || e.metaKey) {
-      setSelected(sel => {
-        const set = new Set(sel);
-        set.has(id) ? set.delete(id) : set.add(id);
-        return set;
-      });
-    } else setSelected(new Set([id]));
-  };
-
-  const handleAdd = (type: "file" | "folder") => {
-    setShowModal(type);
-    setModalInput("");
-    setModalFile(null);
-  };
-  const handleRename = (doc: TreeNode) => {
-    setModalTarget(doc);
-    setModalInput(doc.name);
-    setShowModal("edit");
-  };
-
-  const doAdd = async () => {
-    setUploading(true);
-    if (showModal === "folder" && modalInput.trim()) {
-      const folderPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalInput);
-      await uploadFile(folderPath + "/.keep", new Blob([""], { type: "text/plain" }) as any as File);
-      setShowModal(null);
-      setModalInput("");
-      await refresh();
-    }
-    if (showModal === "file" && modalFile) {
-      for (const file of Array.from(modalFile)) {
-        const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(file.name);
-        await uploadFile(path, file);
-      }
-      setShowModal(null);
-      setModalFile(null);
-      setModalInput("");
-      await refresh();
-    }
-    setUploading(false);
-  };
-
-  const doRename = async () => {
-    if (!modalTarget) return;
-    const newName = modalInput.trim();
-    if (!newName || newName === modalTarget.name) { setShowModal(null); return; }
-    const prefix = modalTarget.path.substring(0, modalTarget.path.lastIndexOf("/"));
-    const newPath = (prefix ? prefix + "/" : "") + newName + (modalTarget.type === "folder" ? "" : "");
-    await moveFileOrFolder(modalTarget.path, newPath, modalTarget.type === "folder");
-    setShowModal(null);
-    setModalTarget(null);
-    await refresh();
-  };
-
-  const handleDelete = async (doc: TreeNode) => {
-    if (!window.confirm(`Delete ${doc.name}?`)) return;
-    setUploading(true);
-    await deleteFileOrFolder(doc.path, doc.type === "folder");
-    setUploading(false);
-    await refresh();
-  };
-
-  const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    setUploading(true);
-    await uploadFilesWithFolders(getCurrentPrefix(), e.target.files);
-    setUploading(false);
-    await refresh();
-  };
-
-  function searchDocs(nodes: TreeNode[], q: string): TreeNode[] {
-    if (!q.trim()) return nodes;
-    q = q.toLowerCase();
-    const filterTree = (docs: TreeNode[]): TreeNode[] =>
-      docs
-        .map(doc => {
-          if (doc.type === "folder" && doc.children) {
-            const children = filterTree(doc.children);
-            if (children.length > 0 || doc.name.toLowerCase().includes(q)) {
-              return { ...doc, children };
-            }
-            return null;
-          } else if (doc.name.toLowerCase().includes(q)) {
-            return doc;
-          }
-          return null;
-        })
-        .filter(Boolean) as TreeNode[];
-    return filterTree(nodes);
-  }
 
   const renderDocViewer = (doc: TreeNode) => {
     const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
@@ -1300,18 +1216,127 @@ const AdminDocumentsPage = () => {
     );
   };
 
-  function getCurrentChildren() {
-    let node = tree;
-    for (const id of folderStack) {
-      const next = node.find(d => d.name === id && d.type === "folder");
-      if (next && next.children) node = next.children;
-      else return [];
-    }
-    return node;
-  }
-  // --- Apply search and sort ---
-  const docsToShow = sortDocs(searchDocs(getCurrentChildren(), search));
+  const handleSelect = (e: React.MouseEvent, id: string) => {
+    if (e.ctrlKey || e.metaKey) {
+      setSelected(sel => {
+        const set = new Set(sel);
+        set.has(id) ? set.delete(id) : set.add(id);
+        return set;
+      });
+    } else setSelected(new Set([id]));
+  };
 
+  const handleAdd = (type: "file" | "folder") => {
+    setShowModal(type);
+    setModalInput("");
+    setModalFile(null);
+  };
+  const handleRename = (doc: TreeNode) => {
+    setModalTarget(doc);
+    setModalInput(doc.name);
+    setShowModal("edit");
+  };
+  const doAdd = async () => {
+    setUploading(true);
+    if (showModal === "folder" && modalInput.trim()) {
+      const folderPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalInput);
+      await uploadFile(folderPath + "/.keep", new Blob([""], { type: "text/plain" }) as any as File);
+      setShowModal(null);
+      setModalInput("");
+      await refresh();
+    }
+    if (showModal === "file" && modalFile) {
+      for (const file of Array.from(modalFile)) {
+        const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(file.name);
+        await uploadFile(path, file);
+      }
+      setShowModal(null);
+      setModalFile(null);
+      setModalInput("");
+      await refresh();
+    }
+    setUploading(false);
+  };
+  const doRename = async () => {
+    if (!modalTarget) return;
+    const newName = modalInput.trim();
+    if (!newName || newName === modalTarget.name) { setShowModal(null); return; }
+    const prefix = modalTarget.path.substring(0, modalTarget.path.lastIndexOf("/"));
+    const newPath = (prefix ? prefix + "/" : "") + newName + (modalTarget.type === "folder" ? "" : "");
+    await moveFileOrFolder(modalTarget.path, newPath, modalTarget.type === "folder");
+    setShowModal(null);
+    setModalTarget(null);
+    await refresh();
+  };
+  const handleDelete = async (doc: TreeNode) => {
+    if (!window.confirm(`Delete ${doc.name}?`)) return;
+    setUploading(true);
+    await deleteFileOrFolder(doc.path, doc.type === "folder");
+    setUploading(false);
+    await refresh();
+  };
+  const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    setUploading(true);
+    await uploadFilesWithFolders(getCurrentPrefix(), e.target.files);
+    setUploading(false);
+    await refresh();
+  };
+
+  // --- DRAG & DROP SUPPORT: Drop anywhere on the page ---
+  const handleGlobalDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setUploading(true);
+    let allFiles: File[] = [];
+
+    if (e.dataTransfer.items && e.dataTransfer.items[0] && 'webkitGetAsEntry' in e.dataTransfer.items[0]) {
+      const traverseFileTree = async (item: any, path = ""): Promise<File[]> => {
+        return new Promise<File[]>((resolve) => {
+          if (item.isFile) {
+            item.file((file: File) => {
+              Object.defineProperty(file, 'webkitRelativePath', {
+                value: path + file.name,
+                writable: false
+              });
+              resolve([file]);
+            });
+          } else if (item.isDirectory) {
+            const dirReader = item.createReader();
+            dirReader.readEntries(async (entries: any) => {
+              let files: File[] = [];
+              for (const entry of entries) {
+                files = files.concat(await traverseFileTree(entry, path + item.name + "/"));
+              }
+              resolve(files);
+            });
+          }
+        });
+      };
+      let files: File[] = [];
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        const entry = e.dataTransfer.items[i].webkitGetAsEntry();
+        if (entry) {
+          files = files.concat(await traverseFileTree(entry, ""));
+        }
+      }
+      allFiles = files;
+    } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      allFiles = Array.from(e.dataTransfer.files);
+    }
+    if (allFiles.length > 0) {
+      await uploadFilesWithFolders(getCurrentPrefix(), allFiles as any as FileList);
+    }
+    setUploading(false);
+    await refresh();
+  };
+
+  const handleGlobalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  // --- Main Render ---
   return (
     <div
       className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4"
@@ -1331,26 +1356,17 @@ const AdminDocumentsPage = () => {
         <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
           <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700"><FolderIcon className="mr-2 h-6 w-6" /> Manage Documents</h2>
           {renderBreadcrumbs()}
-          {/* --- Sort Filter --- */}
+          {/* --- Search and Sort beside each other --- */}
           <div className="flex items-center gap-3 mb-4">
-            <label className="font-semibold">Sort by:</label>
-            <select
-              className="border rounded px-2 py-1"
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value as any)}
-            >
-              <option value="name">Name</option>
-              <option value="date">Last Modified</option>
-              <option value="size">Size</option>
-            </select>
-            <select
-              className="border rounded px-2 py-1"
-              value={sortOrder}
-              onChange={e => setSortOrder(e.target.value as any)}
-            >
-              <option value="asc">Ascending</option>
-              <option value="desc">Descending</option>
-            </select>
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search documents in this folder..."
+              className="border rounded px-3 py-2 w-full md:w-1/3"
+            />
+            {renderSortDropdown()}
+            {uploading && <span className="ml-3 text-blue-600 animate-pulse">Uploading...</span>}
           </div>
           <div className="mb-6 flex flex-wrap gap-3">
             <button className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center gap-1 font-semibold shadow transition" onClick={() => handleAdd("folder")}><Plus className="h-4 w-4" />New Folder</button>
@@ -1369,16 +1385,6 @@ const AdminDocumentsPage = () => {
             {folderStack.length > 0 && (
               <button className="bg-gray-200 px-3 py-2 rounded-lg flex items-center gap-1 font-semibold shadow hover:bg-gray-300 transition" onClick={() => setFolderStack(folderStack.slice(0, -1))}><ArrowLeft className="h-4 w-4" />Back</button>
             )}
-          </div>
-          <div className="flex items-center mb-4">
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search documents in this folder..."
-              className="border rounded px-3 py-2 w-full md:w-1/3"
-            />
-            {uploading && <span className="ml-3 text-blue-600 animate-pulse">Uploading...</span>}
           </div>
           <div className="border rounded-xl p-4 bg-gray-50/60">
             {docsToShow.length ? renderTree(docsToShow) : <p className="text-gray-400">Empty folder</p>}
@@ -1404,22 +1410,22 @@ const AdminDocumentsPage = () => {
         </div>
       )}
       {viewDoc && (
-       <div className="fixed inset-0 z-50 bg-white flex flex-col">
-         <div className="flex items-center p-4 bg-blue-700 shadow">
-           <button
-        className="mr-4 text-white flex items-center gap-2 font-bold text-lg"
-        onClick={() => setViewDoc(null)}
-         >
-          <ArrowLeft className="h-6 w-6" /> Back
-          </button>
-          <span className="text-white font-semibold truncate">{viewDoc.name}</span>
-           </div>
-           <div className="flex-1 p-0 overflow-auto flex justify-center items-center bg-black bg-opacity-5">
-           <div className="w-full h-full flex items-center justify-center">
-            {renderDocViewer(viewDoc)}
+        <div className="fixed inset-0 z-50 bg-white flex flex-col">
+          <div className="flex items-center p-4 bg-blue-700 shadow">
+            <button
+              className="mr-4 text-white flex items-center gap-2 font-bold text-lg"
+              onClick={() => setViewDoc(null)}
+            >
+              <ArrowLeft className="h-6 w-6" /> Back
+            </button>
+            <span className="text-white font-semibold truncate">{viewDoc.name}</span>
+          </div>
+          <div className="flex-1 p-0 overflow-auto flex justify-center items-center bg-black bg-opacity-5">
+            <div className="w-full h-full flex items-center justify-center">
+              {renderDocViewer(viewDoc)}
+            </div>
           </div>
         </div>
-       </div>
       )}
     </div>
   );
