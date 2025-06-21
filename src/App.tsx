@@ -563,29 +563,58 @@ const DocumentsPage = () => {
     setSearch(""); // optional
   };
 
-  // Render tree for current folder only
-  const renderTree = (nodes: TreeNode[]) => (
-    <div className="flex flex-wrap gap-4">
-      {nodes.map(doc => (
-        <div
-          key={doc.id}
-          className="flex flex-col w-60 min-h-[110px] bg-white rounded-xl shadow border p-3 relative group cursor-pointer transition-all"
-        >
-          <div className="flex items-center mb-2">
-            {doc.type === "folder"
-              ? <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
-              : <FileIcon className="h-6 w-6 text-blue-500 mr-2" />}
-            <span className="font-medium text-[10px] break-all w-full block">{doc.name}</span>
+  // Unified folders-as-cards, files-as-list display
+  const renderTree = (nodes: TreeNode[]) => {
+    // Split into folders and files
+    const folders = nodes.filter(doc => doc.type === "folder");
+    const files = nodes.filter(doc => doc.type === "file");
+
+    return (
+      <div>
+        {/* Folders as cards */}
+        {folders.length > 0 && (
+          <div className="flex flex-row gap-4 flex-wrap mb-4">
+            {folders.map(doc => (
+              <div
+                key={doc.id}
+                className="flex flex-col w-60 min-h-[110px] bg-white rounded-xl shadow border p-3 relative group cursor-pointer transition-all"
+                onClick={() => handleFolderOpen(doc)}
+              >
+                <div className="flex items-center mb-2">
+                  <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
+                  <span className="font-medium text-[10px] break-all w-full block">{doc.name}</span>
+                </div>
+                <div className="text-xs flex-1">
+                  {doc.lastModified && <span className="block text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
+                </div>
+                <div className="flex gap-1 mt-2">
+                  <button
+                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                    onClick={e => { e.stopPropagation(); handleFolderOpen(doc); }}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="text-xs flex-1">
-            {doc.type === "file" && doc.size && <span className="block text-gray-600">{formatFileSize(doc.size)}</span>}
-            {doc.lastModified && <span className="block text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-          </div>
-          <div className="flex gap-1 mt-2">
-            {doc.type === "file" && (
-              <>
+        )}
+
+        {/* Files as vertical list */}
+        {files.length > 0 && (
+          <ul className="divide-y divide-gray-200 mt-2">
+            {files.map(doc => (
+              <li
+                key={doc.id}
+                className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all"
+                onClick={() => setViewDoc(doc)}
+              >
+                <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
+                <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
+                {doc.size && <span className="text-xs text-gray-600">{formatFileSize(doc.size)}</span>}
+                {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
                 <button
-                  onClick={() => handleDownload(doc)}
+                  onClick={e => { e.stopPropagation(); handleDownload(doc); }}
                   className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
                   tabIndex={-1}
                   title="Download"
@@ -593,22 +622,24 @@ const DocumentsPage = () => {
                 >
                   <Download className="h-4 w-4" />
                 </button>
-                <button onClick={() => setViewDoc(doc)} className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100">
+                <button
+                  onClick={e => { e.stopPropagation(); setViewDoc(doc); }}
+                  className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100"
+                >
                   View
                 </button>
-              </>
-            )}
-            {doc.type === "folder" && (
-              <button className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                onClick={() => handleFolderOpen(doc)}>
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* If nothing */}
+        {folders.length === 0 && files.length === 0 && (
+          <p className="text-gray-400">No documents available</p>
+        )}
+      </div>
+    );
+  };
 
   async function handleDownload(doc: TreeNode) {
     const { data, error } = await supabase.storage.from(BUCKET).download(doc.path);
@@ -704,6 +735,7 @@ const DocumentsPage = () => {
     </div>
   );
 };
+
 //---------------------- Admin Login Page ----------------------//
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
