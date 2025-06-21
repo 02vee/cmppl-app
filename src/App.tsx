@@ -1296,7 +1296,6 @@ const AdminDocumentsPage = () => {
     return new Promise<File[]>((resolve) => {
       if (item.isFile) {
         item.file((file: File) => {
-          // Polyfill webkitRelativePath for each file so folders are preserved
           Object.defineProperty(file, 'webkitRelativePath', {
             value: path + file.name,
             writable: false
@@ -1306,31 +1305,29 @@ const AdminDocumentsPage = () => {
       } else if (item.isDirectory) {
         const dirReader = item.createReader();
         dirReader.readEntries(async (entries: any) => {
-          let files: File[] = [];
-          for (const entry of entries) {
-            files = files.concat(await traverseFileTree(entry, path + item.name + "/"));
-          }
+          // Use Promise.all here for all children
+          const files = (await Promise.all(entries.map((entry: any) => traverseFileTree(entry, path + item.name + "/")))).flat();
           resolve(files);
         });
+      } else {
+        resolve([]);
       }
     });
   };
 
-  // If user drops files/folders from device
   if (e.dataTransfer.items && e.dataTransfer.items.length > 0 && 'webkitGetAsEntry' in e.dataTransfer.items[0]) {
-    let files: File[] = [];
+    const entries: any[] = [];
     for (let i = 0; i < e.dataTransfer.items.length; i++) {
       const entry = e.dataTransfer.items[i].webkitGetAsEntry();
-      if (entry) {
-        files = files.concat(await traverseFileTree(entry, ""));
-      }
+      if (entry) entries.push(entry);
     }
-    allFiles = files;
+    // Use Promise.all here to get all files from all entries
+    const all = await Promise.all(entries.map(entry => traverseFileTree(entry, "")));
+    allFiles = all.flat();
   } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
     allFiles = Array.from(e.dataTransfer.files);
   }
 
-  // Now upload ALL files
   if (allFiles.length > 0) {
     await uploadFilesWithFolders(getCurrentPrefix(), allFiles);
   }
