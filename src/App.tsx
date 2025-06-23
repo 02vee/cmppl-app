@@ -653,25 +653,46 @@ const DocumentsPage = () => {
 
   const docsToShow = searchTree(getCurrentChildren(), search);
 
-  const renderDocViewer = (doc: TreeNode) => {
-    const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
-    const ext = doc.name.split('.').pop()?.toLowerCase() || "";
-    if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
-      return <img src={url} alt={doc.name} className="max-h-[70vh] max-w-full mx-auto rounded shadow" />;
-    }
-    if (ext === "pdf") {
-      return <iframe title={doc.name} src={url} className="w-full" style={{ minHeight: "70vh" }} />;
-    }
-    if (["txt", "md", "csv", "json", "log"].includes(ext)) {
-      return <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600">View Raw Text</a>;
-    }
+ const renderDocViewer = (doc: TreeNode) => {
+  const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
+  const ext = doc.name.split('.').pop()?.toLowerCase() || "";
+
+  // Image preview
+  if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
+    return <img src={url} alt={doc.name} className="max-h-[70vh] max-w-full mx-auto rounded shadow" />;
+  }
+  // PDF preview
+  if (ext === "pdf") {
+    return <iframe title={doc.name} src={url} className="w-full" style={{ minHeight: "70vh" }} />;
+  }
+  // Text preview
+  if (["txt", "md", "csv", "json", "log"].includes(ext)) {
+    return <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600">View Raw Text</a>;
+  }
+  // Office/OpenDocument preview via Google Docs Viewer
+  if (["doc", "docx", "ppt", "pptx", "xls", "xlsx", "odt", "ods", "odp"].includes(ext)) {
+    const googleDocsUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
     return (
       <div>
-        <p>Cannot preview this file type.</p>
-        <a href={url} download={doc.name} className="text-blue-600 underline">Download</a>
+        <iframe
+          title={doc.name}
+          src={googleDocsUrl}
+          style={{ width: "100%", minHeight: "70vh", border: 0 }}
+        ></iframe>
+        <div className="mt-3">
+          <a href={url} download={doc.name} className="text-blue-600 underline">Download {doc.name}</a>
+        </div>
       </div>
     );
-  };
+  }
+  // Fallback for all other files
+  return (
+    <div>
+      <p>Cannot preview this file type.</p>
+      <a href={url} download={doc.name} className="text-blue-600 underline">Download {doc.name}</a>
+    </div>
+  );
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
