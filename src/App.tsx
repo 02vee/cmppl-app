@@ -651,7 +651,11 @@ const DocumentsPage = () => {
     }, 500);
   }
 
-  const docsToShow = searchTree(getCurrentChildren(), search);
+  const docsToShow = searchTree(getCurrentChildren(), search).sort((a, b) => {
+  if (a.type === "folder" && b.type !== "folder") return -1;
+  if (a.type !== "folder" && b.type === "folder") return 1;
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+});
 
  const renderDocViewer = (doc: TreeNode) => {
   const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
