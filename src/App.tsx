@@ -1205,13 +1205,12 @@ const AdminDocumentsPage = () => {
 
   // Group folders and files for the current view
 const renderTree = (nodes: TreeNode[]) => {
-  // Split into folders and files
   const folders = nodes.filter(doc => doc.type === "folder");
   const files = nodes.filter(doc => doc.type === "file");
 
   return (
     <div>
-      {/* Folders as cards (horizontal scroll if needed) */}
+      {/* Folders as cards */}
       {folders.length > 0 && (
         <div className="flex flex-row gap-4 flex-wrap mb-4">
           {folders.map(doc => (
@@ -1219,7 +1218,16 @@ const renderTree = (nodes: TreeNode[]) => {
               key={doc.id}
               className={`flex flex-col w-60 min-h-[110px] bg-white rounded-xl shadow border p-3 relative group cursor-pointer transition-all
                 ${selected.has(doc.id) ? "ring-2 ring-blue-400" : ""}`}
-              onClick={e => handleSelect(e, doc.id)}
+              // Click: move into folder
+              onClick={e => {
+                e.stopPropagation();
+                setFolderStack([...folderStack, doc.name]);
+              }}
+              tabIndex={0}
+              role="button"
+              onKeyDown={e => {
+                if (e.key === "Enter" || e.key === " ") setFolderStack([...folderStack, doc.name]);
+              }}
               draggable
               onDragStart={() => handleDragStart(doc)}
               onDragOver={e => e.preventDefault()}
@@ -1233,9 +1241,27 @@ const renderTree = (nodes: TreeNode[]) => {
                 {doc.lastModified && <span className="block text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
               </div>
               <div className="flex gap-1 mt-2">
-                <button onClick={e => { e.stopPropagation(); handleRename(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}><Edit className="h-4 w-4" /></button>
-                <button onClick={e => { e.stopPropagation(); handleDelete(doc); }} className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100" tabIndex={-1}><Trash2 className="h-4 w-4" /></button>
-                <button onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.name]); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}><ArrowRight className="h-4 w-4" /></button>
+                <button
+                  onClick={e => { e.stopPropagation(); handleRename(doc); }}
+                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                  tabIndex={-1}
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); handleDelete(doc); }}
+                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
+                  tabIndex={-1}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.name]); }}
+                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                  tabIndex={-1}
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </button>
               </div>
             </div>
           ))}
@@ -1251,24 +1277,50 @@ const renderTree = (nodes: TreeNode[]) => {
               className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
                 ${selected.has(doc.id) ? "bg-blue-50" : ""}`}
               onClick={e => handleSelect(e, doc.id)}
+              onDoubleClick={e => {
+                e.stopPropagation();
+                setViewDoc(doc);
+              }}
               draggable
               onDragStart={() => handleDragStart(doc)}
               onDragOver={e => e.preventDefault()}
               onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
+              tabIndex={0}
+              role="button"
+              onKeyDown={e => {
+                if (e.key === "Enter" || e.key === " ") setViewDoc(doc);
+              }}
             >
               <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
               <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
               {doc.size && <span className="text-xs text-gray-600">{formatFileSize(doc.size)}</span>}
               {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-              <button onClick={e => { e.stopPropagation(); setViewDoc(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}>View</button>
-              <button onClick={e => { e.stopPropagation(); handleRename(doc); }} className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100" tabIndex={-1}><Edit className="h-4 w-4" /></button>
-              <button onClick={e => { e.stopPropagation(); handleDelete(doc); }} className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100" tabIndex={-1}><Trash2 className="h-4 w-4" /></button>
+              <button
+                onClick={e => { e.stopPropagation(); setViewDoc(doc); }}
+                className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                tabIndex={-1}
+              >
+                View
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); handleRename(doc); }}
+                className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                tabIndex={-1}
+              >
+                <Edit className="h-4 w-4" />
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); handleDelete(doc); }}
+                className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
+                tabIndex={-1}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </li>
           ))}
         </ul>
       )}
 
-      {/* If nothing */}
       {folders.length === 0 && files.length === 0 && (
         <p className="text-gray-400">Empty folder</p>
       )}
