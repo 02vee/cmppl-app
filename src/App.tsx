@@ -510,7 +510,7 @@ const DocumentsPage = () => {
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [search, setSearch] = useState<string>("");
   const [viewDoc, setViewDoc] = useState<TreeNode | null>(null);
-  const [folderStack, setFolderStack] = useState<string[]>([]); // <-- Track folder path
+  const [folderStack, setFolderStack] = useState<string[]>([]);
 
   useEffect(() => { refresh(); }, []);
   async function refresh() {
@@ -518,7 +518,6 @@ const DocumentsPage = () => {
     setTree(buildTree(docs));
   }
 
-  // Get children of current folder
   function getCurrentChildren() {
     let node = tree;
     for (const id of folderStack) {
@@ -529,7 +528,6 @@ const DocumentsPage = () => {
     return node;
   }
 
-  // Search/filter
   function searchTree(nodes: TreeNode[], q: string): TreeNode[] {
     if (!q.trim()) return nodes;
     q = q.toLowerCase();
@@ -551,27 +549,23 @@ const DocumentsPage = () => {
     return filterTree(nodes);
   }
 
-  // When a folder is clicked, go deeper
   const handleFolderOpen = (doc: TreeNode) => {
     setFolderStack([...folderStack, doc.id]);
-    setSearch(""); // optional: clear search on folder change
+    setSearch("");
   };
 
-  // "Up" button: go to parent folder
   const handleUp = () => {
     setFolderStack(folderStack.slice(0, -1));
-    setSearch(""); // optional
+    setSearch("");
   };
 
-  // Unified folders-as-cards, files-as-list display
+  // Folders as cards, files as vertical list, click to view
   const renderTree = (nodes: TreeNode[]) => {
-    // Split into folders and files
     const folders = nodes.filter(doc => doc.type === "folder");
     const files = nodes.filter(doc => doc.type === "file");
 
     return (
       <div>
-        {/* Folders as cards */}
         {folders.length > 0 && (
           <div className="flex flex-row gap-4 flex-wrap mb-4">
             {folders.map(doc => (
@@ -579,6 +573,11 @@ const DocumentsPage = () => {
                 key={doc.id}
                 className="flex flex-col w-60 min-h-[110px] bg-white rounded-xl shadow border p-3 relative group cursor-pointer transition-all"
                 onClick={() => handleFolderOpen(doc)}
+                tabIndex={0}
+                role="button"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") handleFolderOpen(doc);
+                }}
               >
                 <div className="flex items-center mb-2">
                   <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
@@ -588,19 +587,13 @@ const DocumentsPage = () => {
                   {doc.lastModified && <span className="block text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
                 </div>
                 <div className="flex gap-1 mt-2">
-                  <button
-                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                    onClick={e => { e.stopPropagation(); handleFolderOpen(doc); }}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
+                  <ChevronRight className="h-4 w-4 text-blue-500" />
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Files as vertical list */}
         {files.length > 0 && (
           <ul className="divide-y divide-gray-200 mt-2">
             {files.map(doc => (
@@ -608,6 +601,12 @@ const DocumentsPage = () => {
                 key={doc.id}
                 className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all"
                 onClick={() => setViewDoc(doc)}
+                onDoubleClick={() => setViewDoc(doc)}
+                tabIndex={0}
+                role="button"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") setViewDoc(doc);
+                }}
               >
                 <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
                 <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
@@ -622,18 +621,11 @@ const DocumentsPage = () => {
                 >
                   <Download className="h-4 w-4" />
                 </button>
-                <button
-                  onClick={e => { e.stopPropagation(); setViewDoc(doc); }}
-                  className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100"
-                >
-                  View
-                </button>
               </li>
             ))}
           </ul>
         )}
 
-        {/* If nothing */}
         {folders.length === 0 && files.length === 0 && (
           <p className="text-gray-400">No documents available</p>
         )}
