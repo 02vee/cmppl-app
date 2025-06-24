@@ -60,6 +60,7 @@ async function listTree(prefix = ""): Promise<TreeNode[]> {
     console.error("Supabase error:", error);
     return out;
   }
+  const folderPromises: Promise<TreeNode[]>[] = [];
   for (const item of data || []) {
     const path = prefix ? `${prefix}/${item.name}` : item.name;
     if (item.metadata && item.metadata.mimetype) {
@@ -73,10 +74,14 @@ async function listTree(prefix = ""): Promise<TreeNode[]> {
         mimetype: item.metadata.mimetype
       });
     } else {
-      // Recursively get all files in the folder and add them to out
-      const children = await listTree(path);
-      out = out.concat(children);
+      // Instead of awaiting each, push to array
+      folderPromises.push(listTree(path));
     }
+  }
+  // Wait for all folder listings at once
+  const childrenArrays = await Promise.all(folderPromises);
+  for (const children of childrenArrays) {
+    out = out.concat(children);
   }
   return out;
 }
