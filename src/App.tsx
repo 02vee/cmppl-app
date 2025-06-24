@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import {
   File as FileIcon, Folder as FolderIcon, Upload, Download, Edit, Trash2, Home, ChevronRight,
-  Truck, MapPin, Lock, Plus, X, ArrowLeft, ArrowRight, RefreshCw, Menu
+ Lock, Plus, X, ArrowLeft, ArrowRight, Menu
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -26,7 +26,6 @@ type TreeNode = {
 };
 
 //---------------------- Utility Functions ----------------------//
-const generateId = () => Math.random().toString(36).substring(2, 9);
 
 const formatFileSize = (bytes: number) => {
   if (!bytes) return "";
