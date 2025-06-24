@@ -25,22 +25,6 @@ type TreeNode = {
   children?: TreeNode[];
 };
 
-type Vehicle = {
-  id: string;
-  number: string;
-  locations: Array<{
-    lat: number;
-    lng: number;
-    time: string;
-    address?: string;
-  }>;
-  deliveryLocation?: {
-    lat: number;
-    lng: number;
-    address?: string;
-  };
-};
-
 //---------------------- Utility Functions ----------------------//
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -51,51 +35,6 @@ const formatFileSize = (bytes: number) => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
-
-async function getAddress(lat: number, lng: number): Promise<string> {
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
-    const json = await res.json();
-    return json.display_name || `${lat}, ${lng}`;
-  } catch {
-    return `${lat}, ${lng}`;
-  }
-}
-async function geocodeAddress(address: string): Promise<{lat: number, lng: number, address: string} | null> {
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
-    const json = await res.json();
-    if (json && json.length > 0) {
-      return {
-        lat: parseFloat(json[0].lat),
-        lng: parseFloat(json[0].lon),
-        address: json[0].display_name
-      };
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  function toRad(x: number) { return x * Math.PI / 180; }
-  const R = 6371; // km
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-}
-function estimateETA(curr: {lat: number, lng: number}, dest: {lat: number, lng: number}, speedKmh = 40) {
-  const dist = haversineDistance(curr.lat, curr.lng, dest.lat, dest.lng);
-  const hours = dist / speedKmh;
-  if (hours < 0.01) return "Arrived";
-  const mins = Math.round(hours * 60);
-  if (mins < 60) return `${mins} mins`;
-  return `${Math.floor(mins/60)} hr ${mins%60} min`;
-}
 
 const SORT_OPTIONS = [
   { value: "name-asc", label: "Name (A-Z)" },
@@ -317,14 +256,12 @@ const ResponsiveNavbar = () => {
           {open ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
         </button>
         <div className="hidden md:flex space-x-4">
-          <Link to="/transporter" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><Truck className="mr-2 h-5 w-5" />Transporter</Link>
           <Link to="/documents" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
           <Link to="/admin/login" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><Lock className="mr-2 h-5 w-5" />Admin</Link>
         </div>
       </div>
       {open && (
         <div className="flex flex-col px-4 pb-4 space-y-1 md:hidden">
-          <Link to="/transporter" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><Truck className="mr-2 h-5 w-5" />Transporter</Link>
           <Link to="/documents" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
           <Link to="/admin/login" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><Lock className="mr-2 h-5 w-5" />Admin</Link>
         </div>
@@ -350,160 +287,6 @@ const HomePage = () => (
     </div>
   </div>
 );
-
-//---------------------- Transporter Page (localStorage vehicle tracking) ----------------------//
-const TransporterPage = () => {
-  const [vehicleNumber, setVehicleNumber] = useState('');
-  const [isTracking, setIsTracking] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<{lat: number, lng: number, address?: string} | null>(null);
-  const watchId = useRef<number | null>(null);
-  const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [deliveryCoords, setDeliveryCoords] = useState<{lat: number, lng: number, address?: string} | null>(null);
-
-  const saveLocation = async (lat: number, lng: number) => {
-    const address = await getAddress(lat, lng);
-    setCurrentLocation({ lat, lng, address });
-    const trackedVehicles: Vehicle[] = JSON.parse(localStorage.getItem('trackedVehicles') || '[]');
-    let idx = trackedVehicles.findIndex(v => v.number === vehicleNumber);
-    const locationEntry = { lat, lng, time: new Date().toISOString(), address };
-    if (idx === -1) {
-      trackedVehicles.push({
-        id: generateId(),
-        number: vehicleNumber,
-        locations: [locationEntry],
-        deliveryLocation: deliveryCoords || undefined
-      });
-    } else {
-      trackedVehicles[idx].locations.push(locationEntry);
-      if (deliveryCoords) trackedVehicles[idx].deliveryLocation = deliveryCoords;
-    }
-    localStorage.setItem('trackedVehicles', JSON.stringify(trackedVehicles));
-  };
-
-  const startTracking = () => {
-    if (!vehicleNumber.trim()) {
-      alert("Please enter a vehicle number");
-      return;
-    }
-    if (!deliveryCoords) {
-      alert("Please set a delivery location");
-      return;
-    }
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
-      return;
-    }
-    setIsTracking(true);
-    watchId.current = navigator.geolocation.watchPosition(
-      async (position) => {
-        await saveLocation(position.coords.latitude, position.coords.longitude);
-      },
-      (error) => {
-        setIsTracking(false);
-        alert("Unable to get location: " + error.message);
-      },
-      { enableHighAccuracy: true }
-    );
-  };
-
-  useEffect(() => {
-    return () => {
-      if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
-    };
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
-      <div className="max-w-4xl mx-auto">
-        <Link to="/" className="inline-flex items-center text-blue-600 mb-4 hover:underline">
-          <Home className="mr-1 h-5 w-5" /> Back to Home
-        </Link>
-        <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
-          <h2 className="text-2xl font-bold mb-6 flex items-center text-blue-700">
-            <Truck className="mr-3 h-7 w-7" /> Vehicle Tracking
-          </h2>
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Number</label>
-              <input
-                type="text"
-                value={vehicleNumber}
-                onChange={(e) => setVehicleNumber(e.target.value)}
-                className="w-full p-3 border-2 border-blue-100 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-400 shadow-sm transition"
-                placeholder="Enter vehicle number"
-                required
-                disabled={isTracking}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address</label>
-              <input
-                type="text"
-                value={deliveryAddress}
-                onChange={e => setDeliveryAddress(e.target.value)}
-                className="w-full p-3 border-2 border-blue-100 rounded-lg"
-                placeholder="Enter delivery location address"
-                required
-                disabled={isTracking}
-              />
-              <button
-                className="mt-2 px-3 py-1 bg-blue-200 rounded"
-                disabled={!deliveryAddress.trim() || isTracking}
-                onClick={async () => {
-                  const coords = await geocodeAddress(deliveryAddress);
-                  if (coords) {
-                    setDeliveryCoords(coords);
-                    alert('Delivery location set!');
-                  } else {
-                    alert('Could not find location, please try again.');
-                  }
-                }}
-                type="button"
-              >
-                Set Delivery Location
-              </button>
-              {deliveryCoords && (
-                <div className="mt-2 text-green-700 text-sm">
-                  Set to: {deliveryCoords.address} (Lat: {deliveryCoords.lat.toFixed(4)}, Lng: {deliveryCoords.lng.toFixed(4)})
-                </div>
-              )}
-            </div>
-            <button
-              onClick={startTracking}
-              disabled={isTracking}
-              className={`w-full py-3 px-4 rounded-lg font-semibold flex items-center justify-center transition ${
-                isTracking ? 'bg-gray-300 text-gray-500' : 'bg-gradient-to-tr from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white shadow-lg'
-              }`}
-            >
-              <MapPin className="mr-2 h-5 w-5" />
-              {isTracking ? 'Tracking...' : 'Start Tracking'}
-            </button>
-            {isTracking && currentLocation && deliveryCoords && (
-              <div className="p-4 bg-gradient-to-tr from-green-50 to-green-100 text-green-900 rounded-lg shadow-inner border border-green-200 animate-fadein">
-                <p className="font-semibold mb-1">Tracking active for <span className="text-blue-800">{vehicleNumber}</span></p>
-                <p className="mb-1">
-                  <span className="font-medium text-green-800">Current Address:</span><br />
-                  <span className="text-green-900">{currentLocation.address}</span>
-                </p>
-                <p className="mb-1">
-                  <span className="font-medium text-blue-800">Delivery Location:</span><br />
-                  <span className="text-green-900">{deliveryCoords.address}</span>
-                </p>
-                <p className="mb-2 text-blue-900 font-mono text-sm">
-                  ETA: {estimateETA(currentLocation, deliveryCoords)}
-                </p>
-                <p className="mb-2 text-gray-700 font-mono text-sm">
-                  Lat: {currentLocation.lat.toFixed(4)}, Lng: {currentLocation.lng.toFixed(4)}
-                </p>
-                <p className="text-xs text-gray-500">This will update in real time. You can close this window.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 //---------------------- DocumentsPage (Supabase, public, read-only) ----------------------//
 const DocumentsPage = () => {
@@ -818,14 +601,7 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-extrabold text-blue-700">Admin Dashboard</h1>
           <button onClick={handleLogout} className="text-blue-700 hover:underline font-semibold">Logout</button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Link to="/admin/track" className="bg-white/90 rounded-2xl shadow-xl p-8 hover:shadow-2xl hover:-translate-y-1 transition">
-            <div className="flex items-center mb-2">
-              <MapPin className="h-7 w-7 text-blue-500 mr-3" />
-              <h2 className="text-xl font-bold text-blue-700">Track Vehicles</h2>
-            </div>
-            <p className="mt-2 text-gray-600">View and manage tracked vehicles</p>
-          </Link>
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
           <Link to="/admin/docs" className="bg-white/90 rounded-2xl shadow-xl p-8 hover:shadow-2xl hover:-translate-y-1 transition">
             <div className="flex items-center mb-2">
               <FileIcon className="h-7 w-7 text-blue-500 mr-3" />
@@ -833,118 +609,6 @@ const AdminDashboard = () => {
             </div>
             <p className="mt-2 text-gray-600">Upload and organize documents</p>
           </Link>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-//---------------------- Admin Track Page ----------------------//
-const AdminTrackPage = () => {
-  const [trackedVehicles, setTrackedVehicles] = useState<Vehicle[]>([]);
-  const [search, setSearch] = useState('');
-  useEffect(() => {
-    const vehicles = JSON.parse(localStorage.getItem('trackedVehicles') || '[]');
-    setTrackedVehicles(vehicles);
-    const interval = setInterval(() => {
-      const vehicles = JSON.parse(localStorage.getItem('trackedVehicles') || '[]');
-      setTrackedVehicles(vehicles);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-  const handleRefresh = () => {
-    const vehicles = JSON.parse(localStorage.getItem('trackedVehicles') || '[]');
-    setTrackedVehicles(vehicles);
-  };
-  const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this vehicle from tracking?")) {
-      const vehicles = trackedVehicles.filter(vehicle => vehicle.id !== id);
-      setTrackedVehicles(vehicles);
-      localStorage.setItem('trackedVehicles', JSON.stringify(vehicles));
-    }
-  };
-  const filteredVehicles = trackedVehicles.filter(vehicle =>
-    vehicle.number.toLowerCase().includes(search.toLowerCase())
-  );
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
-      <div className="max-w-6xl mx-auto">
-        <Link to="/admin" className="inline-flex items-center text-blue-600 mb-4 hover:underline">
-          <Home className="mr-1 h-5 w-5" /> Back to Dashboard
-        </Link>
-        <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-            <h2 className="text-2xl font-bold flex items-center text-blue-700">
-              <MapPin className="mr-3 h-7 w-7" /> Vehicle Tracking
-            </h2>
-            <div className="flex gap-2 items-center">
-              <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search vehicle number"
-                className="border rounded px-3 py-2"
-              />
-              <button onClick={handleRefresh} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded flex items-center">
-                <RefreshCw className="h-4 w-4 mr-1" /> Refresh
-              </button>
-            </div>
-          </div>
-          {filteredVehicles.length > 0 ? (
-            <div className="space-y-6">
-              {filteredVehicles.map(vehicle => {
-                const latest = vehicle.locations && vehicle.locations.length > 0 ? vehicle.locations[vehicle.locations.length - 1] : null;
-                return (
-                  <div key={vehicle.id} className="border rounded-xl p-6 bg-gradient-to-br from-blue-50 to-gray-50 shadow-md flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                    <div>
-                      <h3 className="font-semibold text-blue-800 mb-2"><span className="text-gray-700">Vehicle:</span> {vehicle.number}</h3>
-                      {latest && (
-                        <div className="mt-1">
-                          <p className="font-medium text-blue-700 mb-1">Latest Location:</p>
-                          <p>
-                            {latest.address ? (
-                              <>
-                                <span className="block text-gray-800 font-semibold">{latest.address}</span>
-                                <span className="block text-gray-700 text-xs font-mono">Lat: {latest.lat.toFixed(4)}, Lng: {latest.lng.toFixed(4)}</span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="block text-gray-600 font-mono">Lat: {latest.lat.toFixed(4)}, Lng: {latest.lng.toFixed(4)}</span>
-                              </>
-                            )}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            Last updated: {new Date(latest.time).toLocaleString()}
-                          </p>
-                        </div>
-                      )}
-                      {vehicle.deliveryLocation && (
-                        <p className="mt-2">
-                          <span className="font-medium text-blue-800">Delivery Location: </span>
-                          <span className="text-blue-700">{vehicle.deliveryLocation.address} (Lat: {vehicle.deliveryLocation.lat.toFixed(4)}, Lng: {vehicle.deliveryLocation.lng.toFixed(4)})</span>
-                        </p>
-                      )}
-                      {latest && vehicle.deliveryLocation && (
-                        <p className="font-medium text-green-700">
-                          ETA: {estimateETA(latest, vehicle.deliveryLocation)}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-row gap-2">
-                      <button
-                        onClick={() => handleDelete(vehicle.id)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded flex items-center"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" /> Delete
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-gray-400">No vehicles being tracked</p>
-          )}
         </div>
       </div>
     </div>
@@ -1587,11 +1251,9 @@ const App = () => (
   <Router>
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/transporter" element={<TransporterPage />} />
       <Route path="/documents" element={<DocumentsPage />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-      <Route path="/admin/track" element={<ProtectedRoute><AdminTrackPage /></ProtectedRoute>} />
       <Route path="/admin/docs" element={<ProtectedRoute><AdminDocumentsPage /></ProtectedRoute>} />
     </Routes>
   </Router>
