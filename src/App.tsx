@@ -280,7 +280,7 @@ const HomePage = () => (
           <span className="font-semibold">CMPPL</span> (Counto Microfine Products Pvt. Ltd.) is a joint venture company of Ambuja Cements Ltd and Alcon group Goa. It is pioneer in the country for patented micro fine mineral additives technology. It has one of the world’s biggest dedicated manufacturing facilities of micro fine materials at Goa.
         </p>
         <p className="text-gray-600">
-          Our platform enables secure document sharing and real-time vehicle tracking between transporters and administrators.
+          Our platform enables secure document sharing between users and administrators.
         </p>
       </div>
     </div>
