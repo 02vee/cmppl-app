@@ -1000,128 +1000,25 @@ const renderTree = (nodes: TreeNode[]) => {
     </div>
   );
 };
- const renderDocViewer = (doc: TreeNode) => {
-  const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
-  const ext = doc.name.split('.').pop()?.toLowerCase() || "";
-
-  // Image preview
-  if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
-    return (
-      <img
-        src={url}
-        alt={doc.name}
-        className="max-h-[70vh] max-w-full mx-auto rounded shadow"
-      />
-    );
-  }
-
-  // PDF preview (iframe + open in new tab + download fallback)
-  if (ext === "pdf") {
+  const renderDocViewer = (doc: TreeNode) => {
+    const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
+    const ext = doc.name.split('.').pop()?.toLowerCase() || "";
+    if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
+      return <img src={url} alt={doc.name} className="max-h-[70vh] max-w-full mx-auto rounded shadow" />;
+    }
+    if (ext === "pdf") {
+      return <iframe title={doc.name} src={url} className="w-full" style={{ minHeight: "70vh" }} />;
+    }
+    if (["txt", "md", "csv", "json", "log"].includes(ext)) {
+      return <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600">View Raw Text</a>;
+    }
     return (
       <div>
-        <iframe
-          title={doc.name}
-          src={url}
-          className="w-full"
-          style={{ minHeight: "70vh" }}
-        />
-        <div className="mt-3">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 underline"
-          >
-            Open PDF in new tab
-          </a>
-          <br />
-          <a
-            href={url}
-            download={doc.name}
-            className="text-blue-600 underline"
-          >
-            Download PDF
-          </a>
-          <p className="text-xs text-gray-500 mt-2">
-            If the preview does not work, use the link above to open or download the file.
-          </p>
-        </div>
+        <p>Cannot preview this file type.</p>
+        <a href={url} download={doc.name} className="text-blue-600 underline">Download</a>
       </div>
     );
-  }
-
-  // Text preview
-  if (["txt", "md", "csv", "json", "log"].includes(ext)) {
-    return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600"
-      >
-        View Raw Text
-      </a>
-    );
-  }
-
-  // Audio preview
-  if (["mp3", "wav", "ogg"].includes(ext)) {
-    return (
-      <audio controls style={{ width: "100%" }}>
-        <source src={url} />
-        Your browser does not support the audio element.
-      </audio>
-    );
-  }
-
-  // Video preview
-  if (["mp4", "webm", "ogg"].includes(ext)) {
-    return (
-      <video controls style={{ maxWidth: "100%", maxHeight: "70vh" }}>
-        <source src={url} />
-        Your browser does not support the video tag.
-      </video>
-    );
-  }
-
-  // Office/OpenDocument preview via Google Docs Viewer
-  if (
-    [
-      "doc", "docx", "ppt", "pptx", "xls", "xlsx",
-      "odt", "ods", "odp"
-    ].includes(ext)
-  ) {
-    const googleDocsUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-    return (
-      <div>
-        <iframe
-          title={doc.name}
-          src={googleDocsUrl}
-          style={{ width: "100%", minHeight: "70vh", border: 0 }}
-        ></iframe>
-        <div className="mt-3">
-          <a
-            href={url}
-            download={doc.name}
-            className="text-blue-600 underline"
-          >
-            Download {doc.name}
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  // Fallback for all other files
-  return (
-    <div>
-      <p>Cannot preview this file type.</p>
-      <a href={url} download={doc.name} className="text-blue-600 underline">
-        Download {doc.name}
-      </a>
-    </div>
-  );
-};
+  };
 
   const handleSelect = (e: React.MouseEvent, id: string) => {
     if (e.ctrlKey || e.metaKey) {
