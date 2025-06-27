@@ -52,6 +52,11 @@ function sanitizeName(name: string) {
   return name.replace(/[\\/]/g, "_");
 }
 
+// Utility: get the base name of a file (without extension)
+function getBaseName(filename: string) {
+  return filename.replace(/\.[^/.]+$/, "");
+}
+
 //---------------------- Supabase Folder/File Tree Helpers ----------------------//
 async function listTree(prefix = ""): Promise<TreeNode[]> {
   let out: TreeNode[] = [];
@@ -734,16 +739,21 @@ const AdminDocumentsPage = () => {
     }
   }
 
+  // ---- DRAG & DROP LOGIC (fixed for nested folders) ----
   function handleDragStart(doc: TreeNode) {
     dragItem.current = doc;
   }
   async function handleCardDrop(targetDoc: TreeNode | null) {
     if (!dragItem.current) return;
+
+    // Use full path for destination folder
     let destPrefix = getCurrentPrefix();
     if (targetDoc && targetDoc.type === "folder") {
-      destPrefix = targetDoc.path;
+      destPrefix = targetDoc.id;
     }
     const destPath = destPrefix ? `${destPrefix}/${dragItem.current.name}` : dragItem.current.name;
+
+    // Prevent moving into self or descendant
     if (dragItem.current.path === destPath) {
       dragItem.current = null;
       return;
@@ -759,29 +769,8 @@ const AdminDocumentsPage = () => {
     await refresh();
   }
 
-  let crumbs: { name: string, id: string, path: string[] }[] = [{ name: "Root", id: "root", path: [] }];
-  let node = tree;
-  let path: string[] = [];
-  for (const id of folderStack) {
-    const found = node.find(d => d.name === id && d.type === "folder");
-    if (found) {
-      path = [...path, id];
-      crumbs.push({ name: found.name, id: found.id, path: [...path] });
-      node = found.children || [];
-    }
-  }
-  const renderBreadcrumbs = () => (
-    <nav className="flex items-center mb-4">
-      {crumbs.map((c, i) => (
-        <span key={c.id} className="flex items-center">
-          <button onClick={() => setFolderStack(c.path)} className="text-blue-600 hover:underline font-bold">{c.name}</button>
-          {i < crumbs.length - 1 && <ChevronRight className="h-4 w-4 mx-1 text-gray-300" />}
-        </span>
-      ))}
-    </nav>
-  );
-
-  const getCurrentPrefix = () => folderStack.join("/");
+  // ---- Update navigation to use full path (id) ----
+  const getCurrentPrefix = () => folderStack.length ? folderStack[folderStack.length - 1] : "";
 
   function sortDocs(nodes: TreeNode[]): TreeNode[] {
     const sorted = [...nodes].sort((a, b) => {
@@ -828,7 +817,7 @@ const AdminDocumentsPage = () => {
   function getCurrentChildren() {
     let node = tree;
     for (const id of folderStack) {
-      const next = node.find(d => d.name === id && d.type === "folder");
+      const next = node.find(d => d.id === id && d.type === "folder");
       if (next && next.children) node = next.children;
       else return [];
     }
@@ -876,44 +865,127 @@ const AdminDocumentsPage = () => {
     </div>
   );
 
-  // Group folders and files for the current view
-const renderTree = (nodes: TreeNode[]) => {
-  const folders = nodes.filter(doc => doc.type === "folder");
-  const files = nodes.filter(doc => doc.type === "file");
+  // ---- Breadcrumbs using full path ----
+  let crumbs: { name: string, id: string, path: string[] }[] = [{ name: "Root", id: "root", path: [] }];
+  let node = tree;
+  let pathArr: string[] = [];
+  for (const id of folderStack) {
+    const found = node.find(d => d.id === id && d.type === "folder");
+    if (found) {
+      pathArr = [...pathArr, id];
+      crumbs.push({ name: found.name, id: found.id, path: [...pathArr] });
+      node = found.children || [];
+    }
+  }
+  const renderBreadcrumbs = () => (
+    <nav className="flex items-center mb-4">
+      {crumbs.map((c, i) => (
+        <span key={c.id} className="flex items-center">
+          <button onClick={() => setFolderStack(c.path)} className="text-blue-600 hover:underline font-bold">{c.name}</button>
+          {i < crumbs.length - 1 && <ChevronRight className="h-4 w-4 mx-1 text-gray-300" />}
+        </span>
+      ))}
+    </nav>
+  );
 
-  return (
-    <div>
-      {/* Folders as cards */}
-      {folders.length > 0 && (
-        <div className="flex flex-row gap-4 flex-wrap mb-4">
-          {folders.map(doc => (
-            <div
-              key={doc.id}
-              className={`flex flex-col w-60 min-h-[110px] bg-white rounded-xl shadow border p-3 relative group cursor-pointer transition-all
-                ${selected.has(doc.id) ? "ring-2 ring-blue-400" : ""}`}
-              // Click: move into folder
-              onClick={e => {
-                e.stopPropagation();
-                setFolderStack([...folderStack, doc.name]);
-              }}
-              tabIndex={0}
-              role="button"
-              onKeyDown={e => {
-                if (e.key === "Enter" || e.key === " ") setFolderStack([...folderStack, doc.name]);
-              }}
-              draggable
-              onDragStart={() => handleDragStart(doc)}
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
-            >
-              <div className="flex items-center mb-2">
-                <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
-                <span className="font-medium text-[10px] break-all w-full block">{doc.name}</span>
+  // ---- Render Tree ----
+  const renderTree = (nodes: TreeNode[]) => {
+    const folders = nodes.filter(doc => doc.type === "folder");
+    const files = nodes.filter(doc => doc.type === "file");
+
+    return (
+      <div>
+        {/* Folders as cards */}
+        {folders.length > 0 && (
+          <div className="flex flex-row gap-4 flex-wrap mb-4">
+            {folders.map(doc => (
+              <div
+                key={doc.id}
+                className={`flex flex-col w-60 min-h-[110px] bg-white rounded-xl shadow border p-3 relative group cursor-pointer transition-all
+                  ${selected.has(doc.id) ? "ring-2 ring-blue-400" : ""}`}
+                onClick={e => {
+                  e.stopPropagation();
+                  setFolderStack([...folderStack, doc.id]);
+                }}
+                tabIndex={0}
+                role="button"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") setFolderStack([...folderStack, doc.id]);
+                }}
+                draggable
+                onDragStart={() => handleDragStart(doc)}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
+              >
+                <div className="flex items-center mb-2">
+                  <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
+                  <span className="font-medium text-[10px] break-all w-full block">{doc.name}</span>
+                </div>
+                <div className="text-xs flex-1">
+                  {doc.lastModified && <span className="block text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
+                </div>
+                <div className="flex gap-1 mt-2">
+                  <button
+                    onClick={e => { e.stopPropagation(); handleRename(doc); }}
+                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                    tabIndex={-1}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); handleDelete(doc); }}
+                    className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
+                    tabIndex={-1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.id]); }}
+                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                    tabIndex={-1}
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              <div className="text-xs flex-1">
-                {doc.lastModified && <span className="block text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-              </div>
-              <div className="flex gap-1 mt-2">
+            ))}
+          </div>
+        )}
+
+        {/* Files as vertical list */}
+        {files.length > 0 && (
+          <ul className="divide-y divide-gray-200 mt-2">
+            {files.map(doc => (
+              <li
+                key={doc.id}
+                className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
+                  ${selected.has(doc.id) ? "bg-blue-50" : ""}`}
+                onClick={e => handleSelect(e, doc.id)}
+                onDoubleClick={e => {
+                  e.stopPropagation();
+                  setViewDoc(doc);
+                }}
+                draggable
+                onDragStart={() => handleDragStart(doc)}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
+                tabIndex={0}
+                role="button"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") setViewDoc(doc);
+                }}
+              >
+                <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
+                <span className="flex-1 font-medium text-xs break-all">{getBaseName(doc.name)}</span>
+                {doc.size && <span className="text-xs text-gray-600">{formatFileSize(doc.size)}</span>}
+                {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
+                <button
+                  onClick={e => { e.stopPropagation(); setViewDoc(doc); }}
+                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                  tabIndex={-1}
+                >
+                  View
+                </button>
                 <button
                   onClick={e => { e.stopPropagation(); handleRename(doc); }}
                   className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
@@ -928,78 +1000,18 @@ const renderTree = (nodes: TreeNode[]) => {
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
-                <button
-                  onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.name]); }}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                  tabIndex={-1}
-                >
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              </li>
+            ))}
+          </ul>
+        )}
 
-      {/* Files as vertical list */}
-      {files.length > 0 && (
-        <ul className="divide-y divide-gray-200 mt-2">
-          {files.map(doc => (
-            <li
-              key={doc.id}
-              className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
-                ${selected.has(doc.id) ? "bg-blue-50" : ""}`}
-              onClick={e => handleSelect(e, doc.id)}
-              onDoubleClick={e => {
-                e.stopPropagation();
-                setViewDoc(doc);
-              }}
-              draggable
-              onDragStart={() => handleDragStart(doc)}
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
-              tabIndex={0}
-              role="button"
-              onKeyDown={e => {
-                if (e.key === "Enter" || e.key === " ") setViewDoc(doc);
-              }}
-            >
-              <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
-              <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
-              {doc.size && <span className="text-xs text-gray-600">{formatFileSize(doc.size)}</span>}
-              {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-              <button
-                onClick={e => { e.stopPropagation(); setViewDoc(doc); }}
-                className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                tabIndex={-1}
-              >
-                View
-              </button>
-              <button
-                onClick={e => { e.stopPropagation(); handleRename(doc); }}
-                className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                tabIndex={-1}
-              >
-                <Edit className="h-4 w-4" />
-              </button>
-              <button
-                onClick={e => { e.stopPropagation(); handleDelete(doc); }}
-                className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
-                tabIndex={-1}
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+        {folders.length === 0 && files.length === 0 && (
+          <p className="text-gray-400">Empty folder</p>
+        )}
+      </div>
+    );
+  };
 
-      {folders.length === 0 && files.length === 0 && (
-        <p className="text-gray-400">Empty folder</p>
-      )}
-    </div>
-  );
-};
   const renderDocViewer = (doc: TreeNode) => {
     const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
     const ext = doc.name.split('.').pop()?.toLowerCase() || "";
@@ -1089,56 +1101,54 @@ const renderTree = (nodes: TreeNode[]) => {
 
   // --- DRAG & DROP SUPPORT: Drop anywhere on the page ---
   const handleGlobalDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-  e.preventDefault();
-  e.stopPropagation();
-  setUploading(true);
+    e.preventDefault();
+    e.stopPropagation();
+    setUploading(true);
 
-  let allFiles: File[] = [];
+    let allFiles: File[] = [];
 
-  // Helper to recursively traverse directories
-  const traverseFileTree = async (item: any, path = ""): Promise<File[]> => {
-    return new Promise<File[]>((resolve) => {
-      if (item.isFile) {
-        item.file((file: File) => {
-          Object.defineProperty(file, 'webkitRelativePath', {
-            value: path + file.name,
-            writable: false
+    // Helper to recursively traverse directories
+    const traverseFileTree = async (item: any, path = ""): Promise<File[]> => {
+      return new Promise<File[]>((resolve) => {
+        if (item.isFile) {
+          item.file((file: File) => {
+            Object.defineProperty(file, 'webkitRelativePath', {
+              value: path + file.name,
+              writable: false
+            });
+            resolve([file]);
           });
-          resolve([file]);
-        });
-      } else if (item.isDirectory) {
-        const dirReader = item.createReader();
-        dirReader.readEntries(async (entries: any) => {
-          // Use Promise.all here for all children
-          const files = (await Promise.all(entries.map((entry: any) => traverseFileTree(entry, path + item.name + "/")))).flat();
-          resolve(files);
-        });
-      } else {
-        resolve([]);
+        } else if (item.isDirectory) {
+          const dirReader = item.createReader();
+          dirReader.readEntries(async (entries: any) => {
+            const files = (await Promise.all(entries.map((entry: any) => traverseFileTree(entry, path + item.name + "/")))).flat();
+            resolve(files);
+          });
+        } else {
+          resolve([]);
+        }
+      });
+    };
+
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0 && 'webkitGetAsEntry' in e.dataTransfer.items[0]) {
+      const entries: any[] = [];
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        const entry = e.dataTransfer.items[i].webkitGetAsEntry();
+        if (entry) entries.push(entry);
       }
-    });
-  };
-
-  if (e.dataTransfer.items && e.dataTransfer.items.length > 0 && 'webkitGetAsEntry' in e.dataTransfer.items[0]) {
-    const entries: any[] = [];
-    for (let i = 0; i < e.dataTransfer.items.length; i++) {
-      const entry = e.dataTransfer.items[i].webkitGetAsEntry();
-      if (entry) entries.push(entry);
+      const all = await Promise.all(entries.map(entry => traverseFileTree(entry, "")));
+      allFiles = all.flat();
+    } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      allFiles = Array.from(e.dataTransfer.files);
     }
-    // Use Promise.all here to get all files from all entries
-    const all = await Promise.all(entries.map(entry => traverseFileTree(entry, "")));
-    allFiles = all.flat();
-  } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-    allFiles = Array.from(e.dataTransfer.files);
-  }
 
-  if (allFiles.length > 0) {
-    await uploadFilesWithFolders(getCurrentPrefix(), allFiles);
-  }
+    if (allFiles.length > 0) {
+      await uploadFilesWithFolders(getCurrentPrefix(), allFiles);
+    }
 
-  setUploading(false);
-  await refresh();
-};
+    setUploading(false);
+    await refresh();
+  };
   const handleGlobalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1164,7 +1174,6 @@ const renderTree = (nodes: TreeNode[]) => {
         <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
           <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700"><FolderIcon className="mr-2 h-6 w-6" /> Manage Documents</h2>
           {renderBreadcrumbs()}
-          {/* --- Search and Sort beside each other --- */}
           <div className="flex items-center gap-3 mb-4">
             <input
               type="text"
@@ -1226,7 +1235,7 @@ const renderTree = (nodes: TreeNode[]) => {
             >
               <ArrowLeft className="h-6 w-6" /> Back
             </button>
-            <span className="text-white font-semibold truncate">{viewDoc.name}</span>
+            <span className="text-white font-semibold truncate">{getBaseName(viewDoc.name)}</span>
           </div>
           <div className="flex-1 p-0 overflow-auto flex justify-center items-center bg-black bg-opacity-5">
             <div className="w-full h-full flex items-center justify-center">
