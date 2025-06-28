@@ -299,24 +299,6 @@ const HomePage = () => (
 );
 
 //---------------------- DocumentsPage (Supabase, public, read-only) ----------------------//
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import {
-  File as FileIcon, Folder as FolderIcon, Download, Home, ChevronRight, ArrowLeft
-} from "lucide-react";
-import { supabase, listTree, buildTree, formatFileSize, getBaseName } from "./yourHelperUtilsFile"; // Adjust import as needed
-
-type TreeNode = {
-  id: string;
-  name: string;
-  type: "file" | "folder";
-  path: string;
-  size?: number;
-  lastModified?: string;
-  mimetype?: string;
-  children?: TreeNode[];
-};
-
 const DocumentsPage = () => {
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [search, setSearch] = useState<string>("");
