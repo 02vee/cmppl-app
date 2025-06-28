@@ -299,6 +299,24 @@ const HomePage = () => (
 );
 
 //---------------------- DocumentsPage (Supabase, public, read-only) ----------------------//
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  File as FileIcon, Folder as FolderIcon, Download, Home, ChevronRight, ArrowLeft
+} from "lucide-react";
+import { supabase, listTree, buildTree, formatFileSize, getBaseName } from "./yourHelperUtilsFile"; // Adjust import as needed
+
+type TreeNode = {
+  id: string;
+  name: string;
+  type: "file" | "folder";
+  path: string;
+  size?: number;
+  lastModified?: string;
+  mimetype?: string;
+  children?: TreeNode[];
+};
+
 const DocumentsPage = () => {
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [search, setSearch] = useState<string>("");
@@ -352,19 +370,20 @@ const DocumentsPage = () => {
     setSearch("");
   };
 
-  // Folders as cards, files as vertical list, click to view
+  // Show both folders and files in a single vertical list
   const renderTree = (nodes: TreeNode[]) => {
     const folders = nodes.filter(doc => doc.type === "folder");
     const files = nodes.filter(doc => doc.type === "file");
+    const all = [...folders, ...files];
 
     return (
-      <div>
-        {folders.length > 0 && (
-          <div className="flex flex-row gap-4 flex-wrap mb-4">
-            {folders.map(doc => (
-              <div
+      <ul className="divide-y divide-gray-200 mt-2">
+        {all.map(doc => {
+          if (doc.type === "folder") {
+            return (
+              <li
                 key={doc.id}
-                className="flex flex-col w-60 min-h-[110px] bg-white rounded-xl shadow border p-3 relative group cursor-pointer transition-all"
+                className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all"
                 onClick={() => handleFolderOpen(doc)}
                 tabIndex={0}
                 role="button"
@@ -372,24 +391,14 @@ const DocumentsPage = () => {
                   if (e.key === "Enter" || e.key === " ") handleFolderOpen(doc);
                 }}
               >
-                <div className="flex items-center mb-2">
-                  <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
-                  <span className="font-medium text-[10px] break-all w-full block">{doc.name}</span>
-                </div>
-                <div className="text-xs flex-1">
-                  {doc.lastModified && <span className="block text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-                </div>
-                <div className="flex gap-1 mt-2">
-                  <ChevronRight className="h-4 w-4 text-blue-500" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {files.length > 0 && (
-          <ul className="divide-y divide-gray-200 mt-2">
-            {files.map(doc => (
+                <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
+                <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
+                {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
+                <ChevronRight className="h-4 w-4 text-blue-500" />
+              </li>
+            );
+          } else {
+            return (
               <li
                 key={doc.id}
                 className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all"
@@ -415,19 +424,18 @@ const DocumentsPage = () => {
                   <Download className="h-4 w-4" />
                 </button>
               </li>
-            ))}
-          </ul>
+            );
+          }
+        })}
+        {all.length === 0 && (
+          <li className="text-gray-400 px-2 py-4">No documents available</li>
         )}
-
-        {folders.length === 0 && files.length === 0 && (
-          <p className="text-gray-400">No documents available</p>
-        )}
-      </div>
+      </ul>
     );
   };
 
   async function handleDownload(doc: TreeNode) {
-    const { data, error } = await supabase.storage.from(BUCKET).download(doc.path);
+    const { data, error } = await supabase.storage.from("documents").download(doc.path);
     if (error || !data) {
       alert("Failed to download file.");
       return;
@@ -445,51 +453,51 @@ const DocumentsPage = () => {
   }
 
   const docsToShow = searchTree(getCurrentChildren(), search).sort((a, b) => {
-  if (a.type === "folder" && b.type !== "folder") return -1;
-  if (a.type !== "folder" && b.type === "folder") return 1;
-  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
-});
+    if (a.type === "folder" && b.type !== "folder") return -1;
+    if (a.type !== "folder" && b.type === "folder") return 1;
+    return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  });
 
- const renderDocViewer = (doc: TreeNode) => {
-  const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
-  const ext = doc.name.split('.').pop()?.toLowerCase() || "";
+  const renderDocViewer = (doc: TreeNode) => {
+    const url = supabase.storage.from("documents").getPublicUrl(doc.path).data.publicUrl;
+    const ext = doc.name.split('.').pop()?.toLowerCase() || "";
 
-  // Image preview
-  if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
-    return <img src={url} alt={doc.name} className="max-h-[70vh] max-w-full mx-auto rounded shadow" />;
-  }
-  // PDF preview
-  if (ext === "pdf") {
-    return <iframe title={doc.name} src={url} className="w-full" style={{ minHeight: "70vh" }} />;
-  }
-  // Text preview
-  if (["txt", "md", "csv", "json", "log"].includes(ext)) {
-    return <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600">View Raw Text</a>;
-  }
-  // Office/OpenDocument preview via Google Docs Viewer
-  if (["doc", "docx", "ppt", "pptx", "xls", "xlsx", "odt", "ods", "odp"].includes(ext)) {
-    const googleDocsUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+    // Image preview
+    if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
+      return <img src={url} alt={doc.name} className="max-h-[70vh] max-w-full mx-auto rounded shadow" />;
+    }
+    // PDF preview
+    if (ext === "pdf") {
+      return <iframe title={doc.name} src={url} className="w-full" style={{ minHeight: "70vh" }} />;
+    }
+    // Text preview
+    if (["txt", "md", "csv", "json", "log"].includes(ext)) {
+      return <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600">View Raw Text</a>;
+    }
+    // Office/OpenDocument preview via Google Docs Viewer
+    if (["doc", "docx", "ppt", "pptx", "xls", "xlsx", "odt", "ods", "odp"].includes(ext)) {
+      const googleDocsUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+      return (
+        <div>
+          <iframe
+            title={doc.name}
+            src={googleDocsUrl}
+            style={{ width: "100%", minHeight: "70vh", border: 0 }}
+          ></iframe>
+          <div className="mt-3">
+            <a href={url} download={doc.name} className="text-blue-600 underline">Download {doc.name}</a>
+          </div>
+        </div>
+      );
+    }
+    // Fallback for all other files
     return (
       <div>
-        <iframe
-          title={doc.name}
-          src={googleDocsUrl}
-          style={{ width: "100%", minHeight: "70vh", border: 0 }}
-        ></iframe>
-        <div className="mt-3">
-          <a href={url} download={doc.name} className="text-blue-600 underline">Download {doc.name}</a>
-        </div>
+        <p>Cannot preview this file type.</p>
+        <a href={url} download={doc.name} className="text-blue-600 underline">Download {doc.name}</a>
       </div>
     );
-  }
-  // Fallback for all other files
-  return (
-    <div>
-      <p>Cannot preview this file type.</p>
-      <a href={url} download={doc.name} className="text-blue-600 underline">Download {doc.name}</a>
-    </div>
-  );
-};
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
@@ -520,28 +528,28 @@ const DocumentsPage = () => {
             />
           </div>
           <div className="border rounded-xl p-4 bg-gray-50/60">
-            {docsToShow.length ? renderTree(docsToShow) : <p className="text-gray-400">No documents available</p>}
+            {renderTree(docsToShow)}
           </div>
         </div>
       </div>
       {viewDoc && (
-       <div className="fixed inset-0 z-50 bg-white flex flex-col">
-       <div className="flex items-center p-4 bg-blue-700 shadow">
-      <button
-        className="mr-4 text-white flex items-center gap-2 font-bold text-lg"
-        onClick={() => setViewDoc(null)}
-      >
-        <ArrowLeft className="h-6 w-6" /> Back
-      </button>
-      <span className="text-white font-semibold truncate">{viewDoc.name}</span>
-    </div>
-    <div className="flex-1 p-0 overflow-auto flex justify-center items-center bg-black bg-opacity-5">
-      <div className="w-full h-full flex items-center justify-center">
-        {renderDocViewer(viewDoc)}
-         </div>
-       </div>
-     </div>
-    )}
+        <div className="fixed inset-0 z-50 bg-white flex flex-col">
+          <div className="flex items-center p-4 bg-blue-700 shadow">
+            <button
+              className="mr-4 text-white flex items-center gap-2 font-bold text-lg"
+              onClick={() => setViewDoc(null)}
+            >
+              <ArrowLeft className="h-6 w-6" /> Back
+            </button>
+            <span className="text-white font-semibold truncate">{viewDoc.name}</span>
+          </div>
+          <div className="flex-1 p-0 overflow-auto flex justify-center items-center bg-black bg-opacity-5">
+            <div className="w-full h-full flex items-center justify-center">
+              {renderDocViewer(viewDoc)}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
