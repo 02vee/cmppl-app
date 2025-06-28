@@ -736,14 +736,15 @@ const AdminDocumentsPage = () => {
   async function handleCardDrop(targetDoc: TreeNode | null) {
     if (!dragItem.current) return;
 
-    // Use full path for destination folder
     let destPrefix = getCurrentPrefix();
     if (targetDoc && targetDoc.type === "folder") {
       destPrefix = targetDoc.id;
+    } else if (targetDoc && targetDoc.type === "file") {
+      const parentPath = targetDoc.path.substring(0, targetDoc.path.lastIndexOf("/"));
+      if (parentPath) destPrefix = parentPath;
     }
     const destPath = destPrefix ? `${destPrefix}/${dragItem.current.name}` : dragItem.current.name;
 
-    // Prevent moving into self or descendant
     if (dragItem.current.path === destPath) {
       dragItem.current = null;
       return;
@@ -759,7 +760,6 @@ const AdminDocumentsPage = () => {
     await refresh();
   }
 
-  // ---- Update navigation to use full path (id) ----
   const getCurrentPrefix = () => folderStack.length ? folderStack[folderStack.length - 1] : "";
 
   function sortDocs(nodes: TreeNode[]): TreeNode[] {
@@ -878,74 +878,64 @@ const AdminDocumentsPage = () => {
     </nav>
   );
 
-  // ---- Render Tree ----
+  // ---- Render Tree: folders and files in a single vertical list ----
   const renderTree = (nodes: TreeNode[]) => {
     const folders = nodes.filter(doc => doc.type === "folder");
     const files = nodes.filter(doc => doc.type === "file");
+    const all = [...folders, ...files];
 
     return (
-      <div>
-        {/* Folders as cards */}
-        {folders.length > 0 && (
-          <div className="flex flex-row gap-4 flex-wrap mb-4">
-            {folders.map(doc => (
-              <div
+      <ul className="divide-y divide-gray-200 mt-2">
+        {all.map(doc => {
+          if (doc.type === "folder") {
+            return (
+              <li
                 key={doc.id}
-                className={`flex flex-col w-60 min-h-[110px] bg-white rounded-xl shadow border p-3 relative group cursor-pointer transition-all
-                  ${selected.has(doc.id) ? "ring-2 ring-blue-400" : ""}`}
+                className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
+                  ${selected.has(doc.id) ? "bg-blue-50" : ""}`}
                 onClick={e => {
                   e.stopPropagation();
                   setFolderStack([...folderStack, doc.id]);
-                }}
-                tabIndex={0}
-                role="button"
-                onKeyDown={e => {
-                  if (e.key === "Enter" || e.key === " ") setFolderStack([...folderStack, doc.id]);
                 }}
                 draggable
                 onDragStart={() => handleDragStart(doc)}
                 onDragOver={e => e.preventDefault()}
                 onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
+                tabIndex={0}
+                role="button"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") setFolderStack([...folderStack, doc.id]);
+                }}
               >
-                <div className="flex items-center mb-2">
-                  <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
-                  <span className="font-medium text-[10px] break-all w-full block">{doc.name}</span>
-                </div>
-                <div className="text-xs flex-1">
-                  {doc.lastModified && <span className="block text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-                </div>
-                <div className="flex gap-1 mt-2">
-                  <button
-                    onClick={e => { e.stopPropagation(); handleRename(doc); }}
-                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                    tabIndex={-1}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={e => { e.stopPropagation(); handleDelete(doc); }}
-                    className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
-                    tabIndex={-1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.id]); }}
-                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                    tabIndex={-1}
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Files as vertical list */}
-        {files.length > 0 && (
-          <ul className="divide-y divide-gray-200 mt-2">
-            {files.map(doc => (
+                <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
+                <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
+                {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
+                <button
+                  onClick={e => { e.stopPropagation(); handleRename(doc); }}
+                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                  tabIndex={-1}
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); handleDelete(doc); }}
+                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
+                  tabIndex={-1}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.id]); }}
+                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                  tabIndex={-1}
+                  title="Open"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </li>
+            );
+          } else {
+            return (
               <li
                 key={doc.id}
                 className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
@@ -991,14 +981,13 @@ const AdminDocumentsPage = () => {
                   <Trash2 className="h-4 w-4" />
                 </button>
               </li>
-            ))}
-          </ul>
+            );
+          }
+        })}
+        {all.length === 0 && (
+          <li className="text-gray-400 px-2 py-4">Empty folder</li>
         )}
-
-        {folders.length === 0 && files.length === 0 && (
-          <p className="text-gray-400">Empty folder</p>
-        )}
-      </div>
+      </ul>
     );
   };
 
@@ -1237,6 +1226,7 @@ const AdminDocumentsPage = () => {
     </div>
   );
 };
+
 
 //---------------------- Protected Route ----------------------//
 type ProtectedRouteProps = {
