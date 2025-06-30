@@ -340,90 +340,25 @@ const ADDRESSES = [
   }
 ];
 
-const ContactUsPage = () => {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
-    // Here you would typically send the form data to your backend or email service
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4 flex flex-col items-center justify-center">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 w-full max-w-5xl">
-        {ADDRESSES.map((addr, idx) => (
-          <div
-            key={addr.label}
-            className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-start border border-blue-100 hover:shadow-2xl transition"
-          >
-            <h3 className="text-lg font-bold text-blue-700 mb-2">{addr.label}</h3>
-            <ul className="text-gray-600 text-sm space-y-1">
-              {addr.lines.map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-      <div className="bg-white/90 rounded-2xl shadow-2xl p-8 w-full max-w-lg">
-        <h2 className="text-2xl font-bold mb-4 text-blue-700">Contact Us</h2>
-        {submitted ? (
-          <div className="text-green-600 font-semibold text-center py-4">
-            Thank you for contacting us! We will get back to you soon.
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-              <input
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                className="w-full p-3 border-2 border-blue-100 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-400 shadow-sm transition"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                className="w-full p-3 border-2 border-blue-100 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-400 shadow-sm transition"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
-              <textarea
-                name="message"
-                value={form.message}
-                onChange={handleChange}
-                className="w-full p-3 border-2 border-blue-100 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-400 shadow-sm transition"
-                rows={4}
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-tr from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white py-3 px-4 rounded-lg shadow-lg font-semibold transition"
-            >
-              Submit
-            </button>
-          </form>
-        )}
-      </div>
+const ContactUsPage = () => (
+  <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4 flex flex-col items-center justify-center">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 w-full max-w-5xl">
+      {ADDRESSES.map((addr, idx) => (
+        <div
+          key={addr.label}
+          className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-start border border-blue-100 hover:shadow-2xl transition"
+        >
+          <h3 className="text-lg font-bold text-blue-700 mb-2">{addr.label}</h3>
+          <ul className="text-gray-600 text-sm space-y-1">
+            {addr.lines.map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
-  );
-};
+  </div>
+);
 
 //---------------------- DocumentsPage (Supabase, public, read-only) ----------------------//
 const DocumentsPage = () => {
