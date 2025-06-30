@@ -456,7 +456,7 @@ function customSort(a: Entry, b: Entry) {
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
-// -- Main Component --
+// ---- MAIN COMPONENT ----
 const DocumentsPage = () => {
   const [folderStack, setFolderStack] = useState<string[]>([]); // Array of prefixes
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -670,7 +670,9 @@ const DocumentsPage = () => {
                     }}
                   >
                     <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
-                    <span className="flex-1 font-medium text-xs break-all">{entry.name}</span>
+                    <span className="flex-1 font-medium text-xs break-all">
+                      {getBaseName(entry.name)}
+                    </span>
                     {entry.size && (
                       <span className="text-xs text-gray-600">{formatFileSize(entry.size)}</span>
                     )}
@@ -712,7 +714,7 @@ const DocumentsPage = () => {
             >
               <ArrowLeft className="h-6 w-6" /> Back
             </button>
-            <span className="text-white font-semibold truncate">{viewDoc.name}</span>
+            <span className="text-white font-semibold truncate">{getBaseName(viewDoc.name)}</span>
           </div>
           <div className="flex-1 p-0 overflow-auto flex justify-center items-center bg-black bg-opacity-5">
             <div className="w-full h-full flex items-center justify-center">
