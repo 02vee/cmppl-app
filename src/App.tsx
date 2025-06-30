@@ -351,30 +351,20 @@ const ContactUsPage = () => (
     <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200" />
     <div className="relative z-10 w-full flex flex-col items-center justify-center pt-12 pb-8">
       <h2 className="text-4xl font-extrabold text-blue-700 mb-8 drop-shadow">Contact Us</h2>
-      <div className="relative w-full max-w-xl mx-auto">
-        <div className="absolute left-6 top-0 h-full w-1 bg-blue-200 rounded"></div>
-        <div className="flex flex-col gap-12">
-          {ADDRESSES.map((addr, idx) => (
-            <div key={addr.label} className="relative flex items-start gap-6">
-              <div className="flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shadow">
-                  {idx + 1}
-                </div>
-                {idx < ADDRESSES.length - 1 && (
-                  <div className="flex-1 w-1 bg-blue-200 my-2" style={{ minHeight: 30 }}></div>
-                )}
-              </div>
-              <div className="bg-white/90 rounded-2xl shadow-2xl p-6 border border-blue-100 w-full">
-                <h3 className="text-lg font-bold text-blue-700 mb-2">{addr.label}</h3>
-                <ul className="text-gray-600 text-sm space-y-1">
-                  {addr.lines.map((line, i) => (
-                    <li key={i}>{line}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="flex overflow-x-auto gap-8 w-full max-w-5xl px-2">
+        {ADDRESSES.map((addr, idx) => (
+          <div
+            key={addr.label}
+            className="flex-shrink-0 bg-white/90 rounded-2xl shadow-2xl p-8 flex flex-col items-start border border-blue-100 hover:shadow-2xl transition w-80 min-w-[320px]"
+          >
+            <h3 className="text-lg font-bold text-blue-700 mb-2">{addr.label}</h3>
+            <ul className="text-gray-600 text-sm space-y-1">
+              {addr.lines.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </div>
     {/* Decorative SVG at the bottom */}
