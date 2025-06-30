@@ -348,25 +348,33 @@ const ContactUsPage = () => (
         <path fill="#3b82f6" fillOpacity="0.23" d="M0,256L60,245.3C120,235,240,213,360,213.3C480,213,600,235,720,229.3C840,224,960,192,1080,186.7C1200,181,1320,203,1380,213.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
       </svg>
     </div>
-    {/* Gradient */}
     <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200" />
     <div className="relative z-10 w-full flex flex-col items-center justify-center pt-12 pb-8">
       <h2 className="text-4xl font-extrabold text-blue-700 mb-8 drop-shadow">Contact Us</h2>
-      <div className="flex flex-wrap justify-center gap-8 w-full max-w-5xl">
-        {ADDRESSES.map((addr, idx) => (
-          <div
-            key={addr.label}
-            className={`bg-white/90 rounded-2xl shadow-2xl p-8 flex flex-col items-start border border-blue-100 hover:shadow-2xl transition
-              ${idx === 1 ? "md:mt-10" : idx === 2 ? "md:mt-20" : ""} w-full md:w-[300px]`}
-          >
-            <h3 className="text-lg font-bold text-blue-700 mb-2">{addr.label}</h3>
-            <ul className="text-gray-600 text-sm space-y-1">
-              {addr.lines.map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
+      <div className="relative w-full max-w-xl mx-auto">
+        <div className="absolute left-6 top-0 h-full w-1 bg-blue-200 rounded"></div>
+        <div className="flex flex-col gap-12">
+          {ADDRESSES.map((addr, idx) => (
+            <div key={addr.label} className="relative flex items-start gap-6">
+              <div className="flex flex-col items-center">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shadow">
+                  {idx + 1}
+                </div>
+                {idx < ADDRESSES.length - 1 && (
+                  <div className="flex-1 w-1 bg-blue-200 my-2" style={{ minHeight: 30 }}></div>
+                )}
+              </div>
+              <div className="bg-white/90 rounded-2xl shadow-2xl p-6 border border-blue-100 w-full">
+                <h3 className="text-lg font-bold text-blue-700 mb-2">{addr.label}</h3>
+                <ul className="text-gray-600 text-sm space-y-1">
+                  {addr.lines.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
     {/* Decorative SVG at the bottom */}
