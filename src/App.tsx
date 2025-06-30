@@ -769,27 +769,12 @@ const AdminDocumentsPage = () => {
     localStorage.setItem("adminDocsSort", sort);
   }, [sort]);
 
-   const currentPrefix = folderStack.length ? folderStack[folderStack.length - 1] : "";
-
-  const refresh = async () => {
-    const { data, error } = await supabase.storage.from(BUCKET).list(currentPrefix, { limit: 1000 });
-    if (error || !data) return setTree([]);
-    setTree(
-      data
-        .filter(item => item.name !== ".keep")
-        .map(item => ({
-          id: currentPrefix ? `${currentPrefix}/${item.name}` : item.name,
-          name: item.name,
-          type: item.metadata && item.metadata.mimetype ? "file" : "folder",
-          path: currentPrefix ? `${currentPrefix}/${item.name}` : item.name,
-          size: item.metadata?.size,
-          lastModified: item.updated_at,
-          mimetype: item.metadata?.mimetype,
-        }))
-    );
-  };
-
-  useEffect(() => { refresh(); }, [currentPrefix]);
+  const refresh = useCallback(async () => {
+    const docs = await listTree();
+    setTree(buildTree(docs));
+    setSelected(new Set());
+  }, []);
+  useEffect(() => { refresh(); }, [refresh]);
 
   useEffect(() => {
     if (!showModal && mainRef.current) {
