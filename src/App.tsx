@@ -427,7 +427,6 @@ function getMonthIndex(name: string) {
   return -1;
 }
 
-function customSort(a: Entry, b: Entry) {
   // Priority: intial = 0, final = 1, month = 2, normal folder = 3, file = 4
   function getPriority(entry: Entry) {
   if (entry.type === "folder" && /intial/i.test(entry.name)) return 0;
