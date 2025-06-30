@@ -25,6 +25,17 @@ type TreeNode = {
   children?: TreeNode[];
 };
 
+type Entry = {
+  id: string;
+  name: string;
+  type: "file" | "folder";
+  path: string;
+  size?: number;
+  lastModified?: string;
+  mimetype?: string;
+};
+
+
 //---------------------- Utility Functions ----------------------//
 
 const formatFileSize = (bytes: number) => {
