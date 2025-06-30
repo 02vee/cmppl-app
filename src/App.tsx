@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import {
   File as FileIcon, Folder as FolderIcon, Upload, Download, Edit, Trash2, Home, ChevronRight,
- Lock, Plus, X, ArrowLeft, ArrowRight, Menu
+ Lock, Plus, X, ArrowLeft, ArrowRight, Menu, Mail
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -251,6 +251,7 @@ async function moveFileOrFolder(oldPath: string, newPath: string, isFolder = fal
   }
 }
 
+//---------------------- ResponsiveNavbar ----------------------//
 const ResponsiveNavbar = () => {
   const [open, setOpen] = useState(false);
 
@@ -267,12 +268,14 @@ const ResponsiveNavbar = () => {
         </button>
         <div className="hidden md:flex space-x-4">
           <Link to="/documents" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
+          <Link to="/contact" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><Mail className="mr-2 h-5 w-5" />Contact Us</Link>
           <Link to="/admin/login" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><Lock className="mr-2 h-5 w-5" />Admin</Link>
         </div>
       </div>
       {open && (
         <div className="flex flex-col px-4 pb-4 space-y-1 md:hidden">
           <Link to="/documents" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
+          <Link to="/contact" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><Mail className="mr-2 h-5 w-5" />Contact Us</Link>
           <Link to="/admin/login" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><Lock className="mr-2 h-5 w-5" />Admin</Link>
         </div>
       )}
@@ -297,6 +300,130 @@ const HomePage = () => (
     </div>
   </div>
 );
+
+//---------------------- ContactUsPage ----------------------//
+const ADDRESSES = [
+  {
+    label: "Marketing Office",
+    lines: [
+      "Ambuja Cements Ltd.",
+      "Elegant business park,",
+      "MIDC cross road B, JB Nagar, Andheri East,",
+      "Mumbai",
+      "Pin code: 400059",
+      "Contact: +91 7030935351",
+      "Email: alcofine.customercare@adani.com"
+    ]
+  },
+  {
+    label: "Factory Address",
+    lines: [
+      "Counto Microfine Products Pvt. Ltd.",
+      "Plot No. 161-168, Pissurlem Industrial Estate",
+      "Pissurlem Sattari Goa",
+      "Pin code: 403530",
+      "Phone: +91 832 235 2042/50",
+      "Contact: +91 9923593847"
+    ]
+  },
+  {
+    label: "Registered office/ CORPORATE OFFICE:",
+    lines: [
+      "Counto Microfine Products Pvt. Ltd.",
+      "Fourth Floor, Alcon House,",
+      "Chalta No.72, P.T. Sr. No.19,",
+      "Near Sai Baba Temple,",
+      "Kadamba Road, Panaji-Goa,",
+      "Pin code: 403006",
+      "Contact: +91 832 222 0301/02",
+    ]
+  }
+];
+
+const ContactUsPage = () => {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitted(true);
+    // Here you would typically send the form data to your backend or email service
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4 flex flex-col items-center justify-center">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 w-full max-w-5xl">
+        {ADDRESSES.map((addr, idx) => (
+          <div
+            key={addr.label}
+            className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-start border border-blue-100 hover:shadow-2xl transition"
+          >
+            <h3 className="text-lg font-bold text-blue-700 mb-2">{addr.label}</h3>
+            <ul className="text-gray-600 text-sm space-y-1">
+              {addr.lines.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <div className="bg-white/90 rounded-2xl shadow-2xl p-8 w-full max-w-lg">
+        <h2 className="text-2xl font-bold mb-4 text-blue-700">Contact Us</h2>
+        {submitted ? (
+          <div className="text-green-600 font-semibold text-center py-4">
+            Thank you for contacting us! We will get back to you soon.
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                className="w-full p-3 border-2 border-blue-100 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-400 shadow-sm transition"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                className="w-full p-3 border-2 border-blue-100 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-400 shadow-sm transition"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+              <textarea
+                name="message"
+                value={form.message}
+                onChange={handleChange}
+                className="w-full p-3 border-2 border-blue-100 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-400 shadow-sm transition"
+                rows={4}
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-tr from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white py-3 px-4 rounded-lg shadow-lg font-semibold transition"
+            >
+              Submit
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
 
 //---------------------- DocumentsPage (Supabase, public, read-only) ----------------------//
 const DocumentsPage = () => {
@@ -1246,6 +1373,7 @@ const App = () => (
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/documents" element={<DocumentsPage />} />
+      <Route path="/contact" element={<ContactUsPage />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/docs" element={<ProtectedRoute><AdminDocumentsPage /></ProtectedRoute>} />
