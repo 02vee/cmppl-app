@@ -322,7 +322,6 @@ const ADDRESSES = [
       "Plot No. 161-168, Pissurlem Industrial Estate",
       "Pissurlem Sattari Goa",
       "Pin code: 403530",
-      "Phone: +91 832 235 2042/50",
       "Contact: +91 9923593847"
     ]
   },
@@ -334,8 +333,7 @@ const ADDRESSES = [
       "Chalta No.72, P.T. Sr. No.19,",
       "Near Sai Baba Temple,",
       "Kadamba Road, Panaji-Goa,",
-      "Pin code: 403006",
-      "Contact: +91 832 222 0301/02",
+      "Pin code: 403006"
     ]
   }
 ];
