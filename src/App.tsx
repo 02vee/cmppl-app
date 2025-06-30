@@ -747,34 +747,60 @@ const AdminDashboard = () => {
 
 //---------------------- Admin Documents Page (Supabase) ----------------------//
 const AdminDocumentsPage = () => {
-  const [tree, setTree] = useState<TreeNode[]>([]);
   const [folderStack, setFolderStack] = useState<string[]>([]);
+  const [entries, setEntries] = useState<Entry[]>([]);
   const [showModal, setShowModal] = useState<null | "file" | "folder" | "edit">(null);
-  const [modalTarget, setModalTarget] = useState<TreeNode | null>(null);
+  const [modalTarget, setModalTarget] = useState<Entry | null>(null);
   const [modalInput, setModalInput] = useState<string>("");
   const [modalFile, setModalFile] = useState<FileList | null>(null);
   const [search, setSearch] = useState<string>("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [viewDoc, setViewDoc] = useState<TreeNode | null>(null);
+  const [viewDoc, setViewDoc] = useState<Entry | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [clipboard, setClipboard] = useState<{type: "copy" | "cut", nodes: TreeNode[]} | null>(null);
+  const [clipboard, setClipboard] = useState<{ type: "copy" | "cut"; nodes: Entry[] } | null>(null);
   const [sort, setSort] = useState(getInitialSort());
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const dragItem = useRef<TreeNode | null>(null);
+  const dragItem = useRef<Entry | null>(null);
   const mainRef = useRef<HTMLDivElement>(null);
 
-  const [sortBy, sortOrder] = sort.split("-") as ["name"|"date"|"size", "asc"|"desc"];
+  const [sortBy, sortOrder] = sort.split("-") as ["name" | "date" | "size", "asc" | "desc"];
+
+  // Only load current folder
+  const currentPrefix = folderStack.length ? folderStack[folderStack.length - 1] : "";
+
+  const refresh = async () => {
+    setUploading(true);
+    const { data, error } = await supabase.storage.from(BUCKET).list(currentPrefix, { limit: 1000 });
+    if (error || !data) {
+      setEntries([]);
+      setUploading(false);
+      return;
+    }
+    setEntries(
+      data
+        .filter(item => item.name !== ".keep")
+        .map(item => ({
+          id: currentPrefix ? `${currentPrefix}/${item.name}` : item.name,
+          name: item.name,
+          type: item.metadata && item.metadata.mimetype ? "file" : "folder",
+          path: currentPrefix ? `${currentPrefix}/${item.name}` : item.name,
+          size: item.metadata?.size,
+          lastModified: item.updated_at,
+          mimetype: item.metadata?.mimetype,
+        }))
+    );
+    setSelected(new Set());
+    setUploading(false);
+  };
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line
+  }, [currentPrefix]);
 
   useEffect(() => {
     localStorage.setItem("adminDocsSort", sort);
   }, [sort]);
-
-  const refresh = useCallback(async () => {
-    const docs = await listTree();
-    setTree(buildTree(docs));
-    setSelected(new Set());
-  }, []);
-  useEffect(() => { refresh(); }, [refresh]);
 
   useEffect(() => {
     if (!showModal && mainRef.current) {
@@ -782,15 +808,60 @@ const AdminDocumentsPage = () => {
     }
   }, [showModal, folderStack]);
 
+  // Sorting & searching
+  function sortEntries(nodes: Entry[]): Entry[] {
+    const sorted = [...nodes].sort((a, b) => {
+      if (a.type === "folder" && b.type !== "folder") return -1;
+      if (a.type !== "folder" && b.type === "folder") return 1;
+      let comp = 0;
+      if (sortBy === "name") {
+        comp = a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+      } else if (sortBy === "size") {
+        comp = (a.size || 0) - (b.size || 0);
+      } else if (sortBy === "date") {
+        comp = (new Date(a.lastModified || 0).getTime()) - (new Date(b.lastModified || 0).getTime());
+      }
+      if (sortOrder === "desc") comp = -comp;
+      return comp;
+    });
+    return sorted;
+  }
+
+  function searchEntries(nodes: Entry[], q: string): Entry[] {
+    if (!q.trim()) return nodes;
+    q = q.toLowerCase();
+    return nodes.filter(
+      node =>
+        node.name.toLowerCase().includes(q)
+    );
+  }
+
+  const docsToShow = sortEntries(searchEntries(entries, search));
+
+  // Breadcrumbs
+  const crumbs = [{ name: "Root", prefix: "" }];
+  folderStack.forEach((id, idx) => {
+    crumbs.push({
+      name: id.split("/").pop() || id,
+      prefix: id,
+    });
+  });
+
   // Keyboard shortcuts (cut/copy/paste/delete/rename/select all)
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (showModal) return;
     if ((e.ctrlKey || e.metaKey) && selected.size > 0) {
       if (e.key.toLowerCase() === "c") {
-        setClipboard({type: "copy", nodes: Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]});
+        setClipboard({
+          type: "copy",
+          nodes: Array.from(selected).map(id => entries.find(n => n.id === id)).filter(Boolean) as Entry[],
+        });
       }
       if (e.key.toLowerCase() === "x") {
-        setClipboard({type: "cut", nodes: Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]});
+        setClipboard({
+          type: "cut",
+          nodes: Array.from(selected).map(id => entries.find(n => n.id === id)).filter(Boolean) as Entry[],
+        });
       }
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && clipboard) {
@@ -798,36 +869,25 @@ const AdminDocumentsPage = () => {
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
       e.preventDefault();
-      const nodes = getCurrentChildren();
-      setSelected(new Set(nodes.map(n => n.id)));
+      setSelected(new Set(entries.map(n => n.id)));
     }
     if (e.key === "Delete" && selected.size > 0) {
-      for (const doc of Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]) {
+      for (const doc of Array.from(selected).map(id => entries.find(n => n.id === id)).filter(Boolean) as Entry[]) {
         await handleDelete(doc);
       }
     }
     if (e.key === "F2" && selected.size === 1) {
-      const doc = findNodeById(Array.from(selected)[0], tree);
+      const doc = entries.find(n => n.id === Array.from(selected)[0]);
       if (doc) handleRename(doc);
     }
   };
 
-  function findNodeById(id: string, nodes: TreeNode[]): TreeNode | null {
-    for (const n of nodes) {
-      if (n.id === id) return n;
-      if (n.children) {
-        const found = findNodeById(id, n.children);
-        if (found) return found;
-      }
-    }
-    return null;
-  }
-
+  // --- Clipboard logic (copy/cut/paste) ---
   async function doPaste() {
     if (!clipboard) return;
     setUploading(true);
     for (let node of clipboard.nodes) {
-      const destPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + node.name;
+      const destPath = (currentPrefix ? currentPrefix + "/" : "") + node.name;
       if (clipboard.type === "copy") {
         await copyFileOrFolder(node, destPath);
       }
@@ -840,7 +900,7 @@ const AdminDocumentsPage = () => {
     await refresh();
   }
 
-  async function copyFileOrFolder(node: TreeNode, destPath: string) {
+  async function copyFileOrFolder(node: Entry, destPath: string) {
     if (node.type === "folder") {
       const { data } = await supabase.storage.from(BUCKET).list(node.path, { limit: 1000 });
       for (const item of data || []) {
@@ -859,14 +919,52 @@ const AdminDocumentsPage = () => {
     }
   }
 
-  // ---- DRAG & DROP LOGIC (fixed for nested folders) ----
-  function handleDragStart(doc: TreeNode) {
+  async function moveFileOrFolder(oldPath: string, newPath: string, isFolder = false) {
+    if (oldPath === newPath) return;
+    if (!isFolder) {
+      const { data, error } = await supabase.storage.from(BUCKET).download(oldPath);
+      if (!data || error) {
+        alert("Failed to download file for renaming.");
+        return;
+      }
+      await supabase.storage.from(BUCKET).remove([newPath]);
+      const { error: uploadError } = await supabase.storage.from(BUCKET).upload(newPath, data, { upsert: true });
+      if (uploadError) {
+        alert("Failed to upload file to new name. Rename aborted.");
+        return;
+      }
+      await supabase.storage.from(BUCKET).remove([oldPath]);
+    } else {
+      const { data: items, error } = await supabase.storage.from(BUCKET).list(oldPath, { limit: 1000 });
+      if (error) return;
+      for (const item of items || []) {
+        const oldItemPath = oldPath + "/" + item.name;
+        const newItemPath = newPath + "/" + item.name;
+        if (item.metadata && item.metadata.mimetype) {
+          const { data: fileData, error: downloadErr } = await supabase.storage.from(BUCKET).download(oldItemPath);
+          if (fileData && !downloadErr) {
+            await supabase.storage.from(BUCKET).remove([newItemPath]);
+            const { error: uploadError } = await supabase.storage.from(BUCKET).upload(newItemPath, fileData, { upsert: true });
+            if (!uploadError) {
+              await supabase.storage.from(BUCKET).remove([oldItemPath]);
+            }
+          }
+        } else {
+          await moveFileOrFolder(oldItemPath, newItemPath, true);
+        }
+      }
+      await supabase.storage.from(BUCKET).remove([oldPath]);
+    }
+  }
+
+  // --- Drag & Drop ---
+  function handleDragStart(doc: Entry) {
     dragItem.current = doc;
   }
-  async function handleCardDrop(targetDoc: TreeNode | null) {
+  async function handleCardDrop(targetDoc: Entry | null) {
     if (!dragItem.current) return;
 
-    let destPrefix = getCurrentPrefix();
+    let destPrefix = currentPrefix;
     if (targetDoc && targetDoc.type === "folder") {
       destPrefix = targetDoc.id;
     } else if (targetDoc && targetDoc.type === "file") {
@@ -890,61 +988,181 @@ const AdminDocumentsPage = () => {
     await refresh();
   }
 
-  const getCurrentPrefix = () => folderStack.length ? folderStack[folderStack.length - 1] : "";
+  const handleSelect = (e: React.MouseEvent, id: string) => {
+    if (e.ctrlKey || e.metaKey) {
+      setSelected(sel => {
+        const set = new Set(sel);
+        set.has(id) ? set.delete(id) : set.add(id);
+        return set;
+      });
+    } else setSelected(new Set([id]));
+  };
 
-  function sortDocs(nodes: TreeNode[]): TreeNode[] {
-    const sorted = [...nodes].sort((a, b) => {
-      if (a.type === 'folder' && b.type !== 'folder') return -1;
-      if (a.type !== 'folder' && b.type === 'folder') return 1;
-      let comp = 0;
-      if (sortBy === 'name') {
-        comp = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-      } else if (sortBy === 'size') {
-        comp = (a.size || 0) - (b.size || 0);
-      } else if (sortBy === 'date') {
-        comp = (new Date(a.lastModified || 0).getTime()) - (new Date(b.lastModified || 0).getTime());
-      }
-      if (sortOrder === 'desc') comp = -comp;
-      return comp;
-    });
-    return sorted.map(n => n.type === 'folder' && n.children
-      ? { ...n, children: sortDocs(n.children) }
-      : n
-    );
-  }
-
-  function searchDocs(nodes: TreeNode[], q: string): TreeNode[] {
-    if (!q.trim()) return nodes;
-    q = q.toLowerCase();
-    const filterTree = (docs: TreeNode[]): TreeNode[] =>
-      docs
-        .map(doc => {
-          if (doc.type === "folder" && doc.children) {
-            const children = filterTree(doc.children);
-            if (children.length > 0 || doc.name.toLowerCase().includes(q)) {
-              return { ...doc, children };
-            }
-            return null;
-          } else if (doc.name.toLowerCase().includes(q)) {
-            return doc;
-          }
-          return null;
-        })
-        .filter(Boolean) as TreeNode[];
-    return filterTree(nodes);
-  }
-
-  function getCurrentChildren() {
-    let node = tree;
-    for (const id of folderStack) {
-      const next = node.find(d => d.id === id && d.type === "folder");
-      if (next && next.children) node = next.children;
-      else return [];
+  const handleAdd = (type: "file" | "folder") => {
+    setShowModal(type);
+    setModalInput("");
+    setModalFile(null);
+  };
+  const handleRename = (doc: Entry) => {
+    setModalTarget(doc);
+    setModalInput(doc.name);
+    setShowModal("edit");
+  };
+  const doAdd = async () => {
+    setUploading(true);
+    if (showModal === "folder" && modalInput.trim()) {
+      const folderPath = (currentPrefix ? currentPrefix + "/" : "") + sanitizeName(modalInput);
+      await supabase.storage.from(BUCKET).upload(folderPath + "/.keep", new Blob([""], { type: "text/plain" }) as any as File);
+      setShowModal(null);
+      setModalInput("");
+      await refresh();
     }
-    return node;
-  }
-  const docsToShow = sortDocs(searchDocs(getCurrentChildren(), search));
+    if (showModal === "file" && modalFile) {
+      for (const file of Array.from(modalFile)) {
+        const path = (currentPrefix ? currentPrefix + "/" : "") + sanitizeName(file.name);
+        await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
+      }
+      setShowModal(null);
+      setModalFile(null);
+      setModalInput("");
+      await refresh();
+    }
+    setUploading(false);
+  };
+  const doRename = async () => {
+    if (!modalTarget) return;
+    const newName = modalInput.trim();
+    if (!newName || newName === modalTarget.name) { setShowModal(null); return; }
+    const prefix = modalTarget.path.substring(0, modalTarget.path.lastIndexOf("/"));
+    const newPath = (prefix ? prefix + "/" : "") + newName + (modalTarget.type === "folder" ? "" : "");
+    await moveFileOrFolder(modalTarget.path, newPath, modalTarget.type === "folder");
+    setShowModal(null);
+    setModalTarget(null);
+    await refresh();
+  };
+  const handleDelete = async (doc: Entry) => {
+    if (!window.confirm(`Delete ${doc.name}?`)) return;
+    setUploading(true);
+    if (doc.type === "folder") {
+      // Recursively delete all files in the folder
+      // See your deleteFileOrFolder implementation for reference
+      let filesToDelete: string[] = [];
+      const gatherFiles = async (prefix: string) => {
+        const { data, error } = await supabase.storage.from(BUCKET).list(prefix, { limit: 1000 });
+        if (error) return;
+        if (!data) return;
+        for (const item of data) {
+          const itemPath = prefix ? `${prefix}/${item.name}` : item.name;
+          if (item.metadata && item.metadata.mimetype) {
+            filesToDelete.push(itemPath);
+          } else {
+            if (item.name === ".keep") filesToDelete.push(itemPath);
+            await gatherFiles(itemPath);
+          }
+        }
+      };
+      await gatherFiles(doc.path);
+      const { data: folderData } = await supabase.storage.from(BUCKET).list(doc.path, { limit: 1000 });
+      if (folderData && folderData.find(item => item.name === ".keep")) {
+        filesToDelete.push(doc.path + "/.keep");
+      }
+      if (filesToDelete.length > 0) {
+        await supabase.storage.from(BUCKET).remove(filesToDelete);
+      }
+    } else {
+      await supabase.storage.from(BUCKET).remove([doc.path]);
+    }
+    setUploading(false);
+    await refresh();
+  };
+  const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    setUploading(true);
+    for (const file of Array.from(e.target.files)) {
+      let fullPath = (file as any).webkitRelativePath || file.name;
+      if (currentPrefix) fullPath = currentPrefix + "/" + fullPath;
+      await supabase.storage.from(BUCKET).upload(fullPath, file, { upsert: false });
+    }
+    setUploading(false);
+    await refresh();
+  };
 
+  // --- DRAG & DROP SUPPORT: Drop anywhere on the page ---
+  const handleGlobalDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setUploading(true);
+
+    let allFiles: File[] = [];
+    const traverseFileTree = async (item: any, path = ""): Promise<File[]> => {
+      return new Promise<File[]>((resolve) => {
+        if (item.isFile) {
+          item.file((file: File) => {
+            Object.defineProperty(file, 'webkitRelativePath', {
+              value: path + file.name,
+              writable: false
+            });
+            resolve([file]);
+          });
+        } else if (item.isDirectory) {
+          const dirReader = item.createReader();
+          dirReader.readEntries(async (entries: any) => {
+            const files = (await Promise.all(entries.map((entry: any) => traverseFileTree(entry, path + item.name + "/")))).flat();
+            resolve(files);
+          });
+        } else {
+          resolve([]);
+        }
+      });
+    };
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0 && 'webkitGetAsEntry' in e.dataTransfer.items[0]) {
+      const entries: any[] = [];
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        const entry = e.dataTransfer.items[i].webkitGetAsEntry();
+        if (entry) entries.push(entry);
+      }
+      const all = await Promise.all(entries.map(entry => traverseFileTree(entry, "")));
+      allFiles = all.flat();
+    } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      allFiles = Array.from(e.dataTransfer.files);
+    }
+    if (allFiles.length > 0) {
+      for (const file of allFiles) {
+        let fullPath = (file as any).webkitRelativePath || file.name;
+        if (currentPrefix) fullPath = currentPrefix + "/" + fullPath;
+        await supabase.storage.from(BUCKET).upload(fullPath, file, { upsert: false });
+      }
+    }
+    setUploading(false);
+    await refresh();
+  };
+  const handleGlobalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  // Document preview
+  const renderDocViewer = (doc: Entry) => {
+    const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
+    const ext = doc.name.split('.').pop()?.toLowerCase() || "";
+    if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
+      return <img src={url} alt={doc.name} className="max-h-[70vh] max-w-full mx-auto rounded shadow" />;
+    }
+    if (ext === "pdf") {
+      return <iframe title={doc.name} src={url} className="w-full" style={{ minHeight: "70vh" }} />;
+    }
+    if (["txt", "md", "csv", "json", "log"].includes(ext)) {
+      return <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600">View Raw Text</a>;
+    }
+    return (
+      <div>
+        <p>Cannot preview this file type.</p>
+        <a href={url} download={doc.name} className="text-blue-600 underline">Download</a>
+      </div>
+    );
+  };
+
+  // Sort dropdown
   const renderSortDropdown = () => (
     <div className="relative">
       <button
@@ -985,285 +1203,19 @@ const AdminDocumentsPage = () => {
     </div>
   );
 
-  // ---- Breadcrumbs using full path ----
-  let crumbs: { name: string, id: string, path: string[] }[] = [{ name: "Root", id: "root", path: [] }];
-  let node = tree;
-  let pathArr: string[] = [];
-  for (const id of folderStack) {
-    const found = node.find(d => d.id === id && d.type === "folder");
-    if (found) {
-      pathArr = [...pathArr, id];
-      crumbs.push({ name: found.name, id: found.id, path: [...pathArr] });
-      node = found.children || [];
-    }
-  }
+  // Breadcrumbs
   const renderBreadcrumbs = () => (
     <nav className="flex items-center mb-4">
       {crumbs.map((c, i) => (
-        <span key={c.id} className="flex items-center">
-          <button onClick={() => setFolderStack(c.path)} className="text-blue-600 hover:underline font-bold">{c.name}</button>
+        <span key={c.prefix} className="flex items-center">
+          <button onClick={() => setFolderStack(folderStack.slice(0, i))} className="text-blue-600 hover:underline font-bold">{c.name}</button>
           {i < crumbs.length - 1 && <ChevronRight className="h-4 w-4 mx-1 text-gray-300" />}
         </span>
       ))}
     </nav>
   );
 
-  // ---- Render Tree: folders and files in a single vertical list ----
-  const renderTree = (nodes: TreeNode[]) => {
-    const folders = nodes.filter(doc => doc.type === "folder");
-    const files = nodes.filter(doc => doc.type === "file");
-    const all = [...folders, ...files];
-
-    return (
-      <ul className="divide-y divide-gray-200 mt-2">
-        {all.map(doc => {
-          if (doc.type === "folder") {
-            return (
-              <li
-                key={doc.id}
-                className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
-                  ${selected.has(doc.id) ? "bg-blue-50" : ""}`}
-                onClick={e => {
-                  e.stopPropagation();
-                  setFolderStack([...folderStack, doc.id]);
-                }}
-                draggable
-                onDragStart={() => handleDragStart(doc)}
-                onDragOver={e => e.preventDefault()}
-                onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
-                tabIndex={0}
-                role="button"
-                onKeyDown={e => {
-                  if (e.key === "Enter" || e.key === " ") setFolderStack([...folderStack, doc.id]);
-                }}
-              >
-                <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
-                <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
-                {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-                <button
-                  onClick={e => { e.stopPropagation(); handleRename(doc); }}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                  tabIndex={-1}
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); handleDelete(doc); }}
-                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
-                  tabIndex={-1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.id]); }}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                  tabIndex={-1}
-                  title="Open"
-                >
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </li>
-            );
-          } else {
-            return (
-              <li
-                key={doc.id}
-                className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
-                  ${selected.has(doc.id) ? "bg-blue-50" : ""}`}
-                onClick={e => handleSelect(e, doc.id)}
-                onDoubleClick={e => {
-                  e.stopPropagation();
-                  setViewDoc(doc);
-                }}
-                draggable
-                onDragStart={() => handleDragStart(doc)}
-                onDragOver={e => e.preventDefault()}
-                onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
-                tabIndex={0}
-                role="button"
-                onKeyDown={e => {
-                  if (e.key === "Enter" || e.key === " ") setViewDoc(doc);
-                }}
-              >
-                <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
-                <span className="flex-1 font-medium text-xs break-all">{getBaseName(doc.name)}</span>
-                {doc.size && <span className="text-xs text-gray-600">{formatFileSize(doc.size)}</span>}
-                {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-                <button
-                  onClick={e => { e.stopPropagation(); setViewDoc(doc); }}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                  tabIndex={-1}
-                >
-                  View
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); handleRename(doc); }}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                  tabIndex={-1}
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); handleDelete(doc); }}
-                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
-                  tabIndex={-1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </li>
-            );
-          }
-        })}
-        {all.length === 0 && (
-          <li className="text-gray-400 px-2 py-4">Empty folder</li>
-        )}
-      </ul>
-    );
-  };
-
-  const renderDocViewer = (doc: TreeNode) => {
-    const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
-    const ext = doc.name.split('.').pop()?.toLowerCase() || "";
-    if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
-      return <img src={url} alt={doc.name} className="max-h-[70vh] max-w-full mx-auto rounded shadow" />;
-    }
-    if (ext === "pdf") {
-      return <iframe title={doc.name} src={url} className="w-full" style={{ minHeight: "70vh" }} />;
-    }
-    if (["txt", "md", "csv", "json", "log"].includes(ext)) {
-      return <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600">View Raw Text</a>;
-    }
-    return (
-      <div>
-        <p>Cannot preview this file type.</p>
-        <a href={url} download={doc.name} className="text-blue-600 underline">Download</a>
-      </div>
-    );
-  };
-
-  const handleSelect = (e: React.MouseEvent, id: string) => {
-    if (e.ctrlKey || e.metaKey) {
-      setSelected(sel => {
-        const set = new Set(sel);
-        set.has(id) ? set.delete(id) : set.add(id);
-        return set;
-      });
-    } else setSelected(new Set([id]));
-  };
-
-  const handleAdd = (type: "file" | "folder") => {
-    setShowModal(type);
-    setModalInput("");
-    setModalFile(null);
-  };
-  const handleRename = (doc: TreeNode) => {
-    setModalTarget(doc);
-    setModalInput(doc.name);
-    setShowModal("edit");
-  };
-  const doAdd = async () => {
-    setUploading(true);
-    if (showModal === "folder" && modalInput.trim()) {
-      const folderPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalInput);
-      await uploadFile(folderPath + "/.keep", new Blob([""], { type: "text/plain" }) as any as File);
-      setShowModal(null);
-      setModalInput("");
-      await refresh();
-    }
-    if (showModal === "file" && modalFile) {
-      for (const file of Array.from(modalFile)) {
-        const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(file.name);
-        await uploadFile(path, file);
-      }
-      setShowModal(null);
-      setModalFile(null);
-      setModalInput("");
-      await refresh();
-    }
-    setUploading(false);
-  };
-  const doRename = async () => {
-    if (!modalTarget) return;
-    const newName = modalInput.trim();
-    if (!newName || newName === modalTarget.name) { setShowModal(null); return; }
-    const prefix = modalTarget.path.substring(0, modalTarget.path.lastIndexOf("/"));
-    const newPath = (prefix ? prefix + "/" : "") + newName + (modalTarget.type === "folder" ? "" : "");
-    await moveFileOrFolder(modalTarget.path, newPath, modalTarget.type === "folder");
-    setShowModal(null);
-    setModalTarget(null);
-    await refresh();
-  };
-  const handleDelete = async (doc: TreeNode) => {
-    if (!window.confirm(`Delete ${doc.name}?`)) return;
-    setUploading(true);
-    await deleteFileOrFolder(doc.path, doc.type === "folder");
-    setUploading(false);
-    await refresh();
-  };
-  const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    setUploading(true);
-    await uploadFilesWithFolders(getCurrentPrefix(), e.target.files);
-    setUploading(false);
-    await refresh();
-  };
-
-  // --- DRAG & DROP SUPPORT: Drop anywhere on the page ---
-  const handleGlobalDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setUploading(true);
-
-    let allFiles: File[] = [];
-
-    // Helper to recursively traverse directories
-    const traverseFileTree = async (item: any, path = ""): Promise<File[]> => {
-      return new Promise<File[]>((resolve) => {
-        if (item.isFile) {
-          item.file((file: File) => {
-            Object.defineProperty(file, 'webkitRelativePath', {
-              value: path + file.name,
-              writable: false
-            });
-            resolve([file]);
-          });
-        } else if (item.isDirectory) {
-          const dirReader = item.createReader();
-          dirReader.readEntries(async (entries: any) => {
-            const files = (await Promise.all(entries.map((entry: any) => traverseFileTree(entry, path + item.name + "/")))).flat();
-            resolve(files);
-          });
-        } else {
-          resolve([]);
-        }
-      });
-    };
-
-    if (e.dataTransfer.items && e.dataTransfer.items.length > 0 && 'webkitGetAsEntry' in e.dataTransfer.items[0]) {
-      const entries: any[] = [];
-      for (let i = 0; i < e.dataTransfer.items.length; i++) {
-        const entry = e.dataTransfer.items[i].webkitGetAsEntry();
-        if (entry) entries.push(entry);
-      }
-      const all = await Promise.all(entries.map(entry => traverseFileTree(entry, "")));
-      allFiles = all.flat();
-    } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      allFiles = Array.from(e.dataTransfer.files);
-    }
-
-    if (allFiles.length > 0) {
-      await uploadFilesWithFolders(getCurrentPrefix(), allFiles);
-    }
-
-    setUploading(false);
-    await refresh();
-  };
-  const handleGlobalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  // --- Main Render ---
+  // Main render
   return (
     <div
       className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4"
@@ -1313,7 +1265,111 @@ const AdminDocumentsPage = () => {
             )}
           </div>
           <div className="border rounded-xl p-4 bg-gray-50/60">
-            {docsToShow.length ? renderTree(docsToShow) : <p className="text-gray-400">Empty folder</p>}
+            <ul className="divide-y divide-gray-200 mt-2">
+              {docsToShow.map(doc =>
+                doc.type === "folder" ? (
+                  <li
+                    key={doc.id}
+                    className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
+                  ${selected.has(doc.id) ? "bg-blue-50" : ""}`}
+                    onClick={e => {
+                      e.stopPropagation();
+                      setFolderStack([...folderStack, doc.id]);
+                    }}
+                    draggable
+                    onDragStart={() => handleDragStart(doc)}
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={e => {
+                      e.preventDefault();
+                      handleCardDrop(doc);
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={e => {
+                      if (e.key === "Enter" || e.key === " ") setFolderStack([...folderStack, doc.id]);
+                    }}
+                  >
+                    <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
+                    <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
+                    {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
+                    <button
+                      onClick={e => { e.stopPropagation(); handleRename(doc); }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                      tabIndex={-1}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDelete(doc); }}
+                      className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
+                      tabIndex={-1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.id]); }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                      tabIndex={-1}
+                      title="Open"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </li>
+                ) : (
+                  <li
+                    key={doc.id}
+                    className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
+                  ${selected.has(doc.id) ? "bg-blue-50" : ""}`}
+                    onClick={e => handleSelect(e, doc.id)}
+                    onDoubleClick={e => {
+                      e.stopPropagation();
+                      setViewDoc(doc);
+                    }}
+                    draggable
+                    onDragStart={() => handleDragStart(doc)}
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={e => {
+                      e.preventDefault();
+                      handleCardDrop(doc);
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={e => {
+                      if (e.key === "Enter" || e.key === " ") setViewDoc(doc);
+                    }}
+                  >
+                    <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
+                    <span className="flex-1 font-medium text-xs break-all">{getBaseName(doc.name)}</span>
+                    {doc.size && <span className="text-xs text-gray-600">{formatFileSize(doc.size)}</span>}
+                    {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
+                    <button
+                      onClick={e => { e.stopPropagation(); setViewDoc(doc); }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                      tabIndex={-1}
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleRename(doc); }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                      tabIndex={-1}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDelete(doc); }}
+                      className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
+                      tabIndex={-1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                )
+              )}
+              {docsToShow.length === 0 && (
+                <li className="text-gray-400 px-2 py-4">{uploading ? "Loading..." : "Empty folder"}</li>
+              )}
+            </ul>
           </div>
         </div>
       </div>
@@ -1356,7 +1412,6 @@ const AdminDocumentsPage = () => {
     </div>
   );
 };
-
 
 //---------------------- Protected Route ----------------------//
 type ProtectedRouteProps = {
