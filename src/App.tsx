@@ -395,7 +395,6 @@ const ContactUsPage = () => (
 );
 
 //---------------------- DocumentsPage (Supabase, public, read-only) ----------------------//
-// ---- MONTHS + SORT LOGIC ----
 const MONTHS = [
   ["jan", "january"],
   ["feb", "february"],
@@ -427,36 +426,39 @@ function getMonthIndex(name: string) {
   return -1;
 }
 
-  // Priority: intial = 0, final = 1, month = 2, normal folder = 3, file = 4
-  function getPriority(entry: Entry) {
-  if (entry.type === "folder" && /intial/i.test(entry.name)) return 0;
-  if (entry.type === "folder" && /final/i.test(entry.name)) return 1;
-  if (entry.type === "folder" && getMonthIndex(entry.name) !== -1) return 2;
-  if (entry.type === "folder") return 3;
-  return 4; // file
-}
-
 function customSort(a: Entry, b: Entry) {
-  const aPriority = getPriority(a);
-  const bPriority = getPriority(b);
-  if (aPriority !== bPriority) return aPriority - bPriority;
+  // "intial" folders first
+  const aIsIntial = a.type === "folder" && /intial/i.test(a.name);
+  const bIsIntial = b.type === "folder" && /intial/i.test(b.name);
+  if (aIsIntial && !bIsIntial) return -1;
+  if (!aIsIntial && bIsIntial) return 1;
 
-  // If both are month folders, sort by calendar order
-  if (aPriority === 2 && bPriority === 2) {
-    const aMonthIdx = getMonthIndex(a.name);
-    const bMonthIdx = getMonthIndex(b.name);
-    if (aMonthIdx !== -1 && bMonthIdx !== -1) {
-      return aMonthIdx - bMonthIdx;
-    }
+  // Month folders
+  const aMonthIdx = a.type === "folder" ? getMonthIndex(a.name) : -1;
+  const bMonthIdx = b.type === "folder" ? getMonthIndex(b.name) : -1;
+  if (aMonthIdx !== -1 && bMonthIdx !== -1) {
+    return aMonthIdx - bMonthIdx;
   }
+  if (aMonthIdx !== -1) return -1;
+  if (bMonthIdx !== -1) return 1;
 
-  // Otherwise, alphabetical within group
+  // "final" folders last
+  const aIsFinal = a.type === "folder" && /final/i.test(a.name);
+  const bIsFinal = b.type === "folder" && /final/i.test(b.name);
+  if (aIsFinal && !bIsFinal) return 1;
+  if (!aIsFinal && bIsFinal) return -1;
+
+  // Folders before files
+  if (a.type === "folder" && b.type !== "folder") return -1;
+  if (a.type !== "folder" && b.type === "folder") return 1;
+
+  // Default: alphabetical
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
 // ---- MAIN COMPONENT ----
 const DocumentsPage = () => {
-  const [folderStack, setFolderStack] = useState<string[]>([]);
+  const [folderStack, setFolderStack] = useState<string[]>([]); // Array of prefixes
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState<string>("");
@@ -501,7 +503,7 @@ const DocumentsPage = () => {
       : true
   );
 
-  // Custom sort: intial, final, months, folders, files
+  // Custom sort: months, intial, final, folders, files
   const docsToShow = filtered.slice().sort(customSort);
 
   const handleFolderOpen = (entry: Entry) => {
