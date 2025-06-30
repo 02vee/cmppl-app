@@ -395,6 +395,42 @@ const ContactUsPage = () => (
 );
 
 //---------------------- DocumentsPage (Supabase, public, read-only) ----------------------//
+// -- Month order and custom sort --
+const MONTHS = [
+  "jan", "feb", "mar", "apr", "may", "jun",
+  "jul", "aug", "sep", "oct", "nov", "dec"
+];
+function customSort(a: Entry, b: Entry) {
+  // "intial" folders first
+  const aIsIntial = a.type === "folder" && /intial/i.test(a.name);
+  const bIsIntial = b.type === "folder" && /intial/i.test(b.name);
+  if (aIsIntial && !bIsIntial) return -1;
+  if (!aIsIntial && bIsIntial) return 1;
+
+  // Month folders (exact match, case-insensitive)
+  const aMonthIdx = a.type === "folder" ? MONTHS.indexOf(a.name.toLowerCase()) : -1;
+  const bMonthIdx = b.type === "folder" ? MONTHS.indexOf(b.name.toLowerCase()) : -1;
+  if (aMonthIdx !== -1 && bMonthIdx !== -1) {
+    return aMonthIdx - bMonthIdx;
+  }
+  if (aMonthIdx !== -1) return -1; // month folders before non-month
+  if (bMonthIdx !== -1) return 1;
+
+  // "final" folders last
+  const aIsFinal = a.type === "folder" && /final/i.test(a.name);
+  const bIsFinal = b.type === "folder" && /final/i.test(b.name);
+  if (aIsFinal && !bIsFinal) return 1;
+  if (!aIsFinal && bIsFinal) return -1;
+
+  // Folders before files
+  if (a.type === "folder" && b.type !== "folder") return -1;
+  if (a.type !== "folder" && b.type === "folder") return 1;
+
+  // Default: alphabetical
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+}
+
+// -- Main Component --
 const DocumentsPage = () => {
   const [folderStack, setFolderStack] = useState<string[]>([]); // Array of prefixes
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -441,11 +477,8 @@ const DocumentsPage = () => {
       : true
   );
 
-  // Folders first, then files, both alphabetically
-  const docsToShow = [
-    ...filtered.filter(e => e.type === "folder").sort((a, b) => a.name.localeCompare(b.name)),
-    ...filtered.filter(e => e.type === "file").sort((a, b) => a.name.localeCompare(b.name)),
-  ];
+  // Custom sort: months, intial, final, folders, files
+  const docsToShow = filtered.slice().sort(customSort);
 
   const handleFolderOpen = (entry: Entry) => {
     setFolderStack([...folderStack, entry.id]);
