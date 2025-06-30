@@ -385,50 +385,59 @@ const ContactUsPage = () => (
 
 //---------------------- DocumentsPage (Supabase, public, read-only) ----------------------//
 const DocumentsPage = () => {
-  const [tree, setTree] = useState<TreeNode[]>([]);
+  const [folderStack, setFolderStack] = useState<string[]>([]); // Array of prefixes
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState<string>("");
-  const [viewDoc, setViewDoc] = useState<TreeNode | null>(null);
-  const [folderStack, setFolderStack] = useState<string[]>([]);
+  const [viewDoc, setViewDoc] = useState<Entry | null>(null);
 
-  useEffect(() => { refresh(); }, []);
-  async function refresh() {
-    const docs = await listTree();
-    setTree(buildTree(docs));
-  }
+  // Fetch contents of current folder only
+  const currentPrefix = folderStack.length ? folderStack[folderStack.length - 1] : "";
 
-  function getCurrentChildren() {
-    let node = tree;
-    for (const id of folderStack) {
-      const next = node.find(d => d.id === id && d.type === "folder");
-      if (next && next.children) node = next.children;
-      else return [];
+  const refresh = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.storage.from(BUCKET).list(currentPrefix, { limit: 1000 });
+    if (error || !data) {
+      setEntries([]);
+      setLoading(false);
+      return;
     }
-    return node;
-  }
+    setEntries(
+      data
+        .filter(item => item.name !== ".keep")
+        .map(item => ({
+          id: currentPrefix ? `${currentPrefix}/${item.name}` : item.name,
+          name: item.name,
+          type: item.metadata && item.metadata.mimetype ? "file" : "folder",
+          path: currentPrefix ? `${currentPrefix}/${item.name}` : item.name,
+          size: item.metadata?.size,
+          lastModified: item.updated_at,
+          mimetype: item.metadata?.mimetype,
+        }))
+    );
+    setLoading(false);
+  };
 
-  function searchTree(nodes: TreeNode[], q: string): TreeNode[] {
-    if (!q.trim()) return nodes;
-    q = q.toLowerCase();
-    const filterTree = (docs: TreeNode[]): TreeNode[] =>
-      docs
-        .map(doc => {
-          if (doc.type === "folder" && doc.children) {
-            const children = filterTree(doc.children);
-            if (children.length > 0 || doc.name.toLowerCase().includes(q)) {
-              return { ...doc, children };
-            }
-            return null;
-          } else if (doc.name.toLowerCase().includes(q)) {
-            return doc;
-          }
-          return null;
-        })
-        .filter(Boolean) as TreeNode[];
-    return filterTree(nodes);
-  }
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line
+  }, [currentPrefix]);
 
-  const handleFolderOpen = (doc: TreeNode) => {
-    setFolderStack([...folderStack, doc.id]);
+  // Search filter
+  const filtered = entries.filter(entry =>
+    search
+      ? entry.name.toLowerCase().includes(search.toLowerCase())
+      : true
+  );
+
+  // Folders first, then files, both alphabetically
+  const docsToShow = [
+    ...filtered.filter(e => e.type === "folder").sort((a, b) => a.name.localeCompare(b.name)),
+    ...filtered.filter(e => e.type === "file").sort((a, b) => a.name.localeCompare(b.name)),
+  ];
+
+  const handleFolderOpen = (entry: Entry) => {
+    setFolderStack([...folderStack, entry.id]);
     setSearch("");
   };
 
@@ -437,78 +446,14 @@ const DocumentsPage = () => {
     setSearch("");
   };
 
-  // Show both folders and files in a single vertical list
-  const renderTree = (nodes: TreeNode[]) => {
-    const folders = nodes.filter(doc => doc.type === "folder");
-    const files = nodes.filter(doc => doc.type === "file");
-    const all = [...folders, ...files];
-
-    return (
-      <ul className="divide-y divide-gray-200 mt-2">
-        {all.map(doc => {
-          if (doc.type === "folder") {
-            return (
-              <li
-                key={doc.id}
-                className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all"
-                onClick={() => handleFolderOpen(doc)}
-                tabIndex={0}
-                role="button"
-                onKeyDown={e => {
-                  if (e.key === "Enter" || e.key === " ") handleFolderOpen(doc);
-                }}
-              >
-                <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
-                <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
-                {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-                <ChevronRight className="h-4 w-4 text-blue-500" />
-              </li>
-            );
-          } else {
-            return (
-              <li
-                key={doc.id}
-                className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all"
-                onClick={() => setViewDoc(doc)}
-                onDoubleClick={() => setViewDoc(doc)}
-                tabIndex={0}
-                role="button"
-                onKeyDown={e => {
-                  if (e.key === "Enter" || e.key === " ") setViewDoc(doc);
-                }}
-              >
-                <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
-                <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
-                {doc.size && <span className="text-xs text-gray-600">{formatFileSize(doc.size)}</span>}
-                {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-                <button
-                  onClick={e => { e.stopPropagation(); handleDownload(doc); }}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                  tabIndex={-1}
-                  title="Download"
-                  type="button"
-                >
-                  <Download className="h-4 w-4" />
-                </button>
-              </li>
-            );
-          }
-        })}
-        {all.length === 0 && (
-          <li className="text-gray-400 px-2 py-4">No documents available</li>
-        )}
-      </ul>
-    );
-  };
-
-  async function handleDownload(doc: TreeNode) {
-    const { data, error } = await supabase.storage.from("documents").download(doc.path);
+  async function handleDownload(doc: Entry) {
+    const { data, error } = await supabase.storage.from(BUCKET).download(doc.path);
     if (error || !data) {
       alert("Failed to download file.");
       return;
     }
     const url = window.URL.createObjectURL(data);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = doc.name;
     document.body.appendChild(a);
@@ -519,29 +464,23 @@ const DocumentsPage = () => {
     }, 500);
   }
 
-  const docsToShow = searchTree(getCurrentChildren(), search).sort((a, b) => {
-    if (a.type === "folder" && b.type !== "folder") return -1;
-    if (a.type !== "folder" && b.type === "folder") return 1;
-    return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
-  });
+  const renderDocViewer = (doc: Entry) => {
+    const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
+    const ext = doc.name.split(".").pop()?.toLowerCase() || "";
 
-  const renderDocViewer = (doc: TreeNode) => {
-    const url = supabase.storage.from("documents").getPublicUrl(doc.path).data.publicUrl;
-    const ext = doc.name.split('.').pop()?.toLowerCase() || "";
-
-    // Image preview
     if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext)) {
       return <img src={url} alt={doc.name} className="max-h-[70vh] max-w-full mx-auto rounded shadow" />;
     }
-    // PDF preview
     if (ext === "pdf") {
       return <iframe title={doc.name} src={url} className="w-full" style={{ minHeight: "70vh" }} />;
     }
-    // Text preview
     if (["txt", "md", "csv", "json", "log"].includes(ext)) {
-      return <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600">View Raw Text</a>;
+      return (
+        <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600">
+          View Raw Text
+        </a>
+      );
     }
-    // Office/OpenDocument preview via Google Docs Viewer
     if (["doc", "docx", "ppt", "pptx", "xls", "xlsx", "odt", "ods", "odp"].includes(ext)) {
       const googleDocsUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
       return (
@@ -552,19 +491,31 @@ const DocumentsPage = () => {
             style={{ width: "100%", minHeight: "70vh", border: 0 }}
           ></iframe>
           <div className="mt-3">
-            <a href={url} download={doc.name} className="text-blue-600 underline">Download {doc.name}</a>
+            <a href={url} download={doc.name} className="text-blue-600 underline">
+              Download {doc.name}
+            </a>
           </div>
         </div>
       );
     }
-    // Fallback for all other files
     return (
       <div>
         <p>Cannot preview this file type.</p>
-        <a href={url} download={doc.name} className="text-blue-600 underline">Download {doc.name}</a>
+        <a href={url} download={doc.name} className="text-blue-600 underline">
+          Download {doc.name}
+        </a>
       </div>
     );
   };
+
+  // Breadcrumbs
+  const crumbs = [{ name: "Root", prefix: "" }];
+  folderStack.forEach((id, idx) => {
+    crumbs.push({
+      name: id.split("/").pop() || id,
+      prefix: id,
+    });
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
@@ -576,7 +527,23 @@ const DocumentsPage = () => {
           <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700">
             <FolderIcon className="mr-2 h-6 w-6" /> Documents
           </h2>
-          {/* Up button for folders */}
+          {/* Breadcrumbs */}
+          <nav className="flex items-center mb-4">
+            {crumbs.map((c, i) => (
+              <span key={c.prefix} className="flex items-center">
+                <button
+                  onClick={() => setFolderStack(folderStack.slice(0, i))}
+                  className="text-blue-600 hover:underline font-bold"
+                >
+                  {c.name}
+                </button>
+                {i < crumbs.length - 1 && (
+                  <ChevronRight className="h-4 w-4 mx-1 text-gray-300" />
+                )}
+              </span>
+            ))}
+          </nav>
+          {/* Up button */}
           {folderStack.length > 0 && (
             <button
               className="bg-gray-200 px-3 py-2 rounded-lg flex items-center gap-1 font-semibold shadow hover:bg-gray-300 transition mb-4"
@@ -593,9 +560,76 @@ const DocumentsPage = () => {
               placeholder="Search documents..."
               className="border rounded px-3 py-2 w-full md:w-1/3"
             />
+            {loading && (
+              <span className="ml-4 text-blue-600 animate-pulse font-medium">Loading...</span>
+            )}
           </div>
           <div className="border rounded-xl p-4 bg-gray-50/60">
-            {renderTree(docsToShow)}
+            <ul className="divide-y divide-gray-200 mt-2">
+              {docsToShow.map(entry =>
+                entry.type === "folder" ? (
+                  <li
+                    key={entry.id}
+                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all"
+                    onClick={() => handleFolderOpen(entry)}
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={e => {
+                      if (e.key === "Enter" || e.key === " ") handleFolderOpen(entry);
+                    }}
+                  >
+                    <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
+                    <span className="flex-1 font-medium text-xs break-all">{entry.name}</span>
+                    {entry.lastModified && (
+                      <span className="text-xs text-gray-400">
+                        {new Date(entry.lastModified).toLocaleString()}
+                      </span>
+                    )}
+                    <ChevronRight className="h-4 w-4 text-blue-500" />
+                  </li>
+                ) : (
+                  <li
+                    key={entry.id}
+                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all"
+                    onClick={() => setViewDoc(entry)}
+                    onDoubleClick={() => setViewDoc(entry)}
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={e => {
+                      if (e.key === "Enter" || e.key === " ") setViewDoc(entry);
+                    }}
+                  >
+                    <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
+                    <span className="flex-1 font-medium text-xs break-all">{entry.name}</span>
+                    {entry.size && (
+                      <span className="text-xs text-gray-600">{formatFileSize(entry.size)}</span>
+                    )}
+                    {entry.lastModified && (
+                      <span className="text-xs text-gray-400">
+                        {new Date(entry.lastModified).toLocaleString()}
+                      </span>
+                    )}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleDownload(entry);
+                      }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                      tabIndex={-1}
+                      title="Download"
+                      type="button"
+                    >
+                      <Download className="h-4 w-4" />
+                    </button>
+                  </li>
+                )
+              )}
+              {docsToShow.length === 0 && (
+                <li className="text-gray-400 px-2 py-4">
+                  {loading ? "Loading..." : "No documents available"}
+                </li>
+              )}
+            </ul>
           </div>
         </div>
       </div>
