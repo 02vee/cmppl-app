@@ -285,50 +285,17 @@ const ResponsiveNavbar = () => {
 
 //---------------------- Home Page ----------------------//
 const HomePage = () => (
-  <div className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden">
-    {/* Decorative layered SVGs */}
-    <div className="absolute inset-0 z-0">
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 opacity-95" />
-      {/* Top SVG wave */}
-      <svg className="absolute top-0 left-0 w-full" viewBox="0 0 1440 250" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#FFF" fillOpacity="0.13" d="M0,192L80,165.3C160,139,320,85,480,64C640,43,800,53,960,80C1120,107,1280,149,1360,170.7L1440,192L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z"/>
-      </svg>
-      {/* Bottom SVG wave */}
-      <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 320" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#FFF" fillOpacity="0.19" d="M0,288L60,272C120,256,240,224,360,197.3C480,171,600,149,720,133.3C840,117,960,107,1080,122.7C1200,139,1320,181,1380,202.7L1440,224L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"/>
-      </svg>
-      {/* Subtle noise overlay (optional, comment out if not wanted) */}
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/noise.png')] opacity-10 pointer-events-none" />
-    </div>
-    {/* Content */}
-    <div className="relative z-10 w-full">
-      <div className="max-w-4xl mx-auto">
-        <ResponsiveNavbar />
-        <div className="bg-white/90 rounded-3xl shadow-2xl px-8 py-12 mt-12 mb-12 flex flex-col items-center border border-blue-100">
-          <img src="https://www.alccofine.com/images/alccofine-logo.png" alt="CMPPL Logo" className="w-48 mb-6 drop-shadow-xl" /> {/* You can use your own logo here */}
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-4 text-blue-800 text-center drop-shadow">Welcome to CMPPL</h2>
-          <p className="mb-3 text-gray-700 text-lg text-center max-w-2xl">
-            <span className="font-semibold">CMPPL</span> (Counto Microfine Products Pvt. Ltd.) is a joint venture company of Ambuja Cements Ltd and Alcon group Goa. It is a pioneer in the country for patented micro fine mineral additives technology. It has one of the world’s biggest dedicated manufacturing facilities of micro fine materials at Goa.
-          </p>
-          <p className="text-gray-600 text-center max-w-xl">
-            Our platform enables secure document sharing between users and administrators.
-          </p>
-          <div className="mt-8 flex gap-6">
-            <Link
-              to="/documents"
-              className="inline-flex items-center px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold shadow transition"
-            >
-              <FileIcon className="mr-2 h-5 w-5" /> View Documents
-            </Link>
-            <Link
-              to="/contact"
-              className="inline-flex items-center px-6 py-3 rounded-xl bg-white border-2 border-blue-600 text-blue-700 font-semibold text-lg shadow hover:bg-blue-50 transition"
-            >
-              <Mail className="mr-2 h-5 w-5" /> Contact Us
-            </Link>
-          </div>
-        </div>
+  <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
+    <div className="max-w-4xl mx-auto">
+      <ResponsiveNavbar />
+      <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
+        <h2 className="text-2xl font-bold mb-4 text-blue-700">Welcome to CMPPL</h2>
+        <p className="mb-2 text-gray-700">
+          <span className="font-semibold">CMPPL</span> (Counto Microfine Products Pvt. Ltd.) is a joint venture company of Ambuja Cements Ltd and Alcon group Goa. It is pioneer in the country for patented micro fine mineral additives technology. It has one of the world’s biggest dedicated manufacturing facilities of micro fine materials at Goa.
+        </p>
+        <p className="text-gray-600">
+          Our platform enables secure document sharing between users and administrators.
+        </p>
       </div>
     </div>
   </div>
