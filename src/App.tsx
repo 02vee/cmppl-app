@@ -395,11 +395,37 @@ const ContactUsPage = () => (
 );
 
 //---------------------- DocumentsPage (Supabase, public, read-only) ----------------------//
-// -- Month order and custom sort --
 const MONTHS = [
-  "jan", "feb", "mar", "apr", "may", "jun",
-  "jul", "aug", "sep", "oct", "nov", "dec"
+  ["jan", "january"],
+  ["feb", "february"],
+  ["mar", "march"],
+  ["apr", "april"],
+  ["may"],
+  ["jun", "june"],
+  ["jul", "july"],
+  ["aug", "august"],
+  ["sep", "september"],
+  ["oct", "october"],
+  ["nov", "november"],
+  ["dec", "december"]
 ];
+
+function getMonthIndex(name: string) {
+  const lower = name.toLowerCase();
+  for (let i = 0; i < MONTHS.length; ++i) {
+    for (const variant of MONTHS[i]) {
+      if (lower.startsWith(variant)) {
+        // Next char must be non-letter or end of string
+        const nextChar = lower.charAt(variant.length);
+        if (!nextChar || /[^a-z]/.test(nextChar)) {
+          return i;
+        }
+      }
+    }
+  }
+  return -1;
+}
+
 function customSort(a: Entry, b: Entry) {
   // "intial" folders first
   const aIsIntial = a.type === "folder" && /intial/i.test(a.name);
@@ -407,13 +433,13 @@ function customSort(a: Entry, b: Entry) {
   if (aIsIntial && !bIsIntial) return -1;
   if (!aIsIntial && bIsIntial) return 1;
 
-  // Month folders (exact match, case-insensitive)
-  const aMonthIdx = a.type === "folder" ? MONTHS.indexOf(a.name.toLowerCase()) : -1;
-  const bMonthIdx = b.type === "folder" ? MONTHS.indexOf(b.name.toLowerCase()) : -1;
+  // Month folders
+  const aMonthIdx = a.type === "folder" ? getMonthIndex(a.name) : -1;
+  const bMonthIdx = b.type === "folder" ? getMonthIndex(b.name) : -1;
   if (aMonthIdx !== -1 && bMonthIdx !== -1) {
     return aMonthIdx - bMonthIdx;
   }
-  if (aMonthIdx !== -1) return -1; // month folders before non-month
+  if (aMonthIdx !== -1) return -1;
   if (bMonthIdx !== -1) return 1;
 
   // "final" folders last
