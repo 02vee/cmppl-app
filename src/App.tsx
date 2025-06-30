@@ -430,16 +430,16 @@ function getMonthIndex(name: string) {
 function customSort(a: Entry, b: Entry) {
   // Priority: intial = 0, final = 1, month = 2, normal folder = 3, file = 4
   function getPriority(entry: Entry) {
-    if (entry.type === "folder" && /intial/i.test(entry.name)) return 0;
-    if (entry.type === "folder" && /final/i.test(entry.name)) return 1;
-    if (entry.type === "folder" && getMonthIndex(entry.name) !== -1) return 2;
-    if (entry.type === "folder") return 3;
-    return 4; // file
-  }
+  if (entry.type === "folder" && /intial/i.test(entry.name)) return 0;
+  if (entry.type === "folder" && /final/i.test(entry.name)) return 1;
+  if (entry.type === "folder" && getMonthIndex(entry.name) !== -1) return 2;
+  if (entry.type === "folder") return 3;
+  return 4; // file
+}
 
+function customSort(a: Entry, b: Entry) {
   const aPriority = getPriority(a);
   const bPriority = getPriority(b);
-
   if (aPriority !== bPriority) return aPriority - bPriority;
 
   // If both are month folders, sort by calendar order
@@ -451,7 +451,7 @@ function customSort(a: Entry, b: Entry) {
     }
   }
 
-  // Default: alphabetical
+  // Otherwise, alphabetical within group
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
