@@ -301,7 +301,6 @@ const HomePage = () => (
   </div>
 );
 
-//---------------------- ContactUsPage ----------------------//
 const ADDRESSES = [
   {
     label: "Marketing Office",
@@ -341,21 +340,38 @@ const ADDRESSES = [
 ];
 
 const ContactUsPage = () => (
-  <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4 flex flex-col items-center justify-center">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 w-full max-w-5xl">
-      {ADDRESSES.map((addr, idx) => (
-        <div
-          key={addr.label}
-          className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-start border border-blue-100 hover:shadow-2xl transition"
-        >
-          <h3 className="text-lg font-bold text-blue-700 mb-2">{addr.label}</h3>
-          <ul className="text-gray-600 text-sm space-y-1">
-            {addr.lines.map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
-          </ul>
-        </div>
-      ))}
+  <div className="relative min-h-screen flex flex-col items-center justify-center overflow-x-hidden">
+    {/* Decorative SVG Wave */}
+    <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{height: '220px', minHeight: '140px'}}>
+      <svg viewBox="0 0 1440 320" className="w-full h-full">
+        <path fill="#3b82f6" fillOpacity="0.23" d="M0,256L60,245.3C120,235,240,213,360,213.3C480,213,600,235,720,229.3C840,224,960,192,1080,186.7C1200,181,1320,203,1380,213.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
+      </svg>
+    </div>
+    {/* Gradient and subtle pattern */}
+    <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200" />
+    <div className="relative z-10 w-full flex flex-col items-center justify-center pt-12 pb-8">
+      <h2 className="text-4xl font-extrabold text-blue-700 mb-8 drop-shadow">Contact Us</h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
+        {ADDRESSES.map((addr, idx) => (
+          <div
+            key={addr.label}
+            className="bg-white/90 rounded-2xl shadow-2xl p-8 flex flex-col items-start border border-blue-100 hover:shadow-2xl transition"
+          >
+            <h3 className="text-lg font-bold text-blue-700 mb-2">{addr.label}</h3>
+            <ul className="text-gray-600 text-sm space-y-1">
+              {addr.lines.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+    {/* Decorative SVG at the bottom */}
+    <div className="absolute bottom-0 left-0 w-full pointer-events-none z-0" style={{height: '100px', minHeight: '60px'}}>
+      <svg viewBox="0 0 1440 320" className="w-full h-full">
+        <path fill="#3b82f6" fillOpacity="0.17" d="M0,32L120,37.3C240,43,480,53,720,53.3C960,53,1200,43,1320,37.3L1440,32L1440,320L1320,320C1200,320,960,320,720,320C480,320,240,320,120,320L0,320Z"></path>
+      </svg>
     </div>
   </div>
 );
