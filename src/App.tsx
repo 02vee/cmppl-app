@@ -818,13 +818,13 @@ const AdminDocumentsPage = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewDoc, setViewDoc] = useState<TreeNode | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [clipboard, setClipboard] = useState<{type: "copy" | "cut", nodes: TreeNode[]} | null>(null);
+  const [clipboard, setClipboard] = useState<{ type: "copy" | "cut", nodes: TreeNode[] } | null>(null);
   const [sort, setSort] = useState(getInitialSort());
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const dragItem = useRef<TreeNode | null>(null);
   const mainRef = useRef<HTMLDivElement>(null);
 
-  const [sortBy, sortOrder] = sort.split("-") as ["name"|"date"|"size", "asc"|"desc"];
+  const [sortBy, sortOrder] = sort.split("-") as ["name" | "date" | "size", "asc" | "desc"];
 
   useEffect(() => {
     localStorage.setItem("adminDocsSort", sort);
@@ -843,15 +843,37 @@ const AdminDocumentsPage = () => {
     }
   }, [showModal, folderStack]);
 
-  // Keyboard shortcuts (cut/copy/paste/delete/rename/select all)
+  // Bulk delete/copy/cut/paste handlers
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!window.confirm(`Delete ${selected.size} items?`)) return;
+    setUploading(true);
+    for (const id of Array.from(selected)) {
+      const doc = findNodeById(id, tree);
+      if (doc) await deleteFileOrFolder(doc.path, doc.type === "folder");
+    }
+    setUploading(false);
+    setSelected(new Set());
+    await refresh();
+  };
+  const handleBulkCopy = () => {
+    const nodes = Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[];
+    setClipboard({ type: "copy", nodes });
+  };
+  const handleBulkCut = () => {
+    const nodes = Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[];
+    setClipboard({ type: "cut", nodes });
+  };
+
+  // Keyboard shortcuts
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (showModal) return;
     if ((e.ctrlKey || e.metaKey) && selected.size > 0) {
       if (e.key.toLowerCase() === "c") {
-        setClipboard({type: "copy", nodes: Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]});
+        handleBulkCopy();
       }
       if (e.key.toLowerCase() === "x") {
-        setClipboard({type: "cut", nodes: Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]});
+        handleBulkCut();
       }
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v" && clipboard) {
@@ -860,12 +882,10 @@ const AdminDocumentsPage = () => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
       e.preventDefault();
       const nodes = getCurrentChildren();
-      setSelected(new Set(nodes.map(n => n.id)));
+      setSelected(new Set(nodes.map((n) => n.id)));
     }
     if (e.key === "Delete" && selected.size > 0) {
-      for (const doc of Array.from(selected).map(id => findNodeById(id, tree)).filter(Boolean) as TreeNode[]) {
-        await handleDelete(doc);
-      }
+      await handleBulkDelete();
     }
     if (e.key === "F2" && selected.size === 1) {
       const doc = findNodeById(Array.from(selected)[0], tree);
@@ -920,13 +940,11 @@ const AdminDocumentsPage = () => {
     }
   }
 
-  // ---- DRAG & DROP LOGIC (fixed for nested folders) ----
   function handleDragStart(doc: TreeNode) {
     dragItem.current = doc;
   }
   async function handleCardDrop(targetDoc: TreeNode | null) {
     if (!dragItem.current) return;
-
     let destPrefix = getCurrentPrefix();
     if (targetDoc && targetDoc.type === "folder") {
       destPrefix = targetDoc.id;
@@ -935,7 +953,6 @@ const AdminDocumentsPage = () => {
       if (parentPath) destPrefix = parentPath;
     }
     const destPath = destPrefix ? `${destPrefix}/${dragItem.current.name}` : dragItem.current.name;
-
     if (dragItem.current.path === destPath) {
       dragItem.current = null;
       return;
@@ -1046,7 +1063,7 @@ const AdminDocumentsPage = () => {
     </div>
   );
 
-  // ---- Breadcrumbs using full path ----
+  // Breadcrumbs
   let crumbs: { name: string, id: string, path: string[] }[] = [{ name: "Root", id: "root", path: [] }];
   let node = tree;
   let pathArr: string[] = [];
@@ -1069,7 +1086,7 @@ const AdminDocumentsPage = () => {
     </nav>
   );
 
-  // ---- Render Tree: folders and files in a single vertical list ----
+  // Tree: only checkbox toggles selection, click elsewhere navigates/view
   const renderTree = (nodes: TreeNode[]) => {
     const folders = nodes.filter(doc => doc.type === "folder");
     const files = nodes.filter(doc => doc.type === "file");
@@ -1078,102 +1095,116 @@ const AdminDocumentsPage = () => {
     return (
       <ul className="divide-y divide-gray-200 mt-2">
         {all.map(doc => {
-          if (doc.type === "folder") {
-            return (
-              <li
-                key={doc.id}
-                className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
-                  ${selected.has(doc.id) ? "bg-blue-50" : ""}`}
-                onClick={e => {
-                  e.stopPropagation();
-                  setFolderStack([...folderStack, doc.id]);
+          const isChecked = selected.has(doc.id);
+          return (
+            <li
+              key={doc.id}
+              className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
+                ${isChecked ? "bg-blue-50" : ""}`}
+              onClick={e => {
+                // Only navigate if NOT clicking checkbox or button
+                if ((e.target as HTMLElement).closest("input[type=checkbox],button")) return;
+                if (doc.type === "folder") setFolderStack([...folderStack, doc.id]);
+              }}
+              onDoubleClick={e => {
+                if (doc.type === "file") setViewDoc(doc);
+              }}
+              draggable
+              onDragStart={() => handleDragStart(doc)}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
+              tabIndex={0}
+              role="button"
+              onKeyDown={e => {
+                if (e.key === "Enter" || e.key === " ") {
+                  if (doc.type === "folder") setFolderStack([...folderStack, doc.id]);
+                  else setViewDoc(doc);
+                }
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={e => {
+                  setSelected(sel => {
+                    const set = new Set(sel);
+                    if (e.target.checked) set.add(doc.id);
+                    else set.delete(doc.id);
+                    return set;
+                  });
                 }}
-                draggable
-                onDragStart={() => handleDragStart(doc)}
-                onDragOver={e => e.preventDefault()}
-                onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
-                tabIndex={0}
-                role="button"
-                onKeyDown={e => {
-                  if (e.key === "Enter" || e.key === " ") setFolderStack([...folderStack, doc.id]);
-                }}
-              >
-                <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
-                <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
-                {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-                <button
-                  onClick={e => { e.stopPropagation(); handleRename(doc); }}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                  tabIndex={-1}
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); handleDelete(doc); }}
-                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
-                  tabIndex={-1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.id]); }}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                  tabIndex={-1}
-                  title="Open"
-                >
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </li>
-            );
-          } else {
-            return (
-              <li
-                key={doc.id}
-                className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
-                  ${selected.has(doc.id) ? "bg-blue-50" : ""}`}
-                onClick={e => handleSelect(e, doc.id)}
-                onDoubleClick={e => {
-                  e.stopPropagation();
-                  setViewDoc(doc);
-                }}
-                draggable
-                onDragStart={() => handleDragStart(doc)}
-                onDragOver={e => e.preventDefault()}
-                onDrop={e => { e.preventDefault(); handleCardDrop(doc); }}
-                tabIndex={0}
-                role="button"
-                onKeyDown={e => {
-                  if (e.key === "Enter" || e.key === " ") setViewDoc(doc);
-                }}
-              >
-                <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
-                <span className="flex-1 font-medium text-xs break-all">{getBaseName(doc.name)}</span>
-                {doc.size && <span className="text-xs text-gray-600">{formatFileSize(doc.size)}</span>}
-                {doc.lastModified && <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>}
-                <button
-                  onClick={e => { e.stopPropagation(); setViewDoc(doc); }}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                  tabIndex={-1}
-                >
-                  View
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); handleRename(doc); }}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                  tabIndex={-1}
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); handleDelete(doc); }}
-                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
-                  tabIndex={-1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </li>
-            );
-          }
+                onClick={e => e.stopPropagation()}
+                className="mr-2"
+              />
+              {doc.type === "folder" ? (
+                <>
+                  <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
+                  <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
+                </>
+              ) : (
+                <>
+                  <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
+                  <span className="flex-1 font-medium text-xs break-all">{getBaseName(doc.name)}</span>
+                </>
+              )}
+              {doc.size && doc.type === "file" && (
+                <span className="text-xs text-gray-600">{formatFileSize(doc.size)}</span>
+              )}
+              {doc.lastModified && (
+                <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>
+              )}
+              {doc.type === "folder" ? (
+                <>
+                  <button
+                    onClick={e => { e.stopPropagation(); handleRename(doc); }}
+                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                    tabIndex={-1}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); handleDelete(doc); }}
+                    className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
+                    tabIndex={-1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.id]); }}
+                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                    tabIndex={-1}
+                    title="Open"
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={e => { e.stopPropagation(); setViewDoc(doc); }}
+                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                    tabIndex={-1}
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); handleRename(doc); }}
+                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                    tabIndex={-1}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); handleDelete(doc); }}
+                    className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
+                    tabIndex={-1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+            </li>
+          );
         })}
         {all.length === 0 && (
           <li className="text-gray-400 px-2 py-4">Empty folder</li>
@@ -1200,16 +1231,6 @@ const AdminDocumentsPage = () => {
         <a href={url} download={doc.name} className="text-blue-600 underline">Download</a>
       </div>
     );
-  };
-
-  const handleSelect = (e: React.MouseEvent, id: string) => {
-    if (e.ctrlKey || e.metaKey) {
-      setSelected(sel => {
-        const set = new Set(sel);
-        set.has(id) ? set.delete(id) : set.add(id);
-        return set;
-      });
-    } else setSelected(new Set([id]));
   };
 
   const handleAdd = (type: "file" | "folder") => {
@@ -1342,8 +1363,35 @@ const AdminDocumentsPage = () => {
           <ArrowLeft className="mr-1 h-5 w-5" /> Back to Dashboard
         </button>
         <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
-          <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700"><FolderIcon className="mr-2 h-6 w-6" /> Manage Documents</h2>
+          <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700">
+            <FolderIcon className="mr-2 h-6 w-6" /> Manage Documents
+          </h2>
           {renderBreadcrumbs()}
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded disabled:opacity-50"
+              disabled={selected.size === 0}
+              onClick={handleBulkDelete}
+            >Delete</button>
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded disabled:opacity-50"
+              disabled={selected.size === 0}
+              onClick={handleBulkCut}
+            >Cut</button>
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded disabled:opacity-50"
+              disabled={selected.size === 0}
+              onClick={handleBulkCopy}
+            >Copy</button>
+            <button
+              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded disabled:opacity-50"
+              disabled={!clipboard}
+              onClick={doPaste}
+            >Paste</button>
+            <span className="ml-2 text-gray-500 text-sm">
+              {selected.size > 0 && `${selected.size} selected`}
+            </span>
+          </div>
           <div className="flex items-center gap-3 mb-4">
             <input
               type="text"
