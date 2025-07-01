@@ -639,7 +639,8 @@ const DocumentsPage = () => {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search documents..."
-              className="border rounded px-3 py-2 w-full md:w-1/3"
+              className="border rounded px-3 py-2 w-full md:max-w-xs"
+              // removed md:w-1/3 for mobile friendliness
             />
             {loading && (
               <span className="ml-4 text-blue-600 animate-pulse font-medium">Loading...</span>
@@ -651,7 +652,7 @@ const DocumentsPage = () => {
                 entry.type === "folder" ? (
                   <li
                     key={entry.id}
-                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all"
+                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all w-full"
                     onClick={() => handleFolderOpen(entry)}
                     tabIndex={0}
                     role="button"
@@ -659,19 +660,19 @@ const DocumentsPage = () => {
                       if (e.key === "Enter" || e.key === " ") handleFolderOpen(entry);
                     }}
                   >
-                    <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
-                    <span className="flex-1 font-medium text-xs break-all">{entry.name}</span>
+                    <FolderIcon className="h-6 w-6 text-yellow-500 mr-2 flex-shrink-0" />
+                    <span className="flex-1 font-medium text-xs break-words whitespace-normal">{entry.name}</span>
                     {entry.lastModified && (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
                         {new Date(entry.lastModified).toLocaleString()}
                       </span>
                     )}
-                    <ChevronRight className="h-4 w-4 text-blue-500" />
+                    <ChevronRight className="h-4 w-4 text-blue-500 flex-shrink-0" />
                   </li>
                 ) : (
                   <li
                     key={entry.id}
-                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all"
+                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all w-full"
                     onClick={() => handleView(entry)}
                     tabIndex={0}
                     role="button"
@@ -679,15 +680,15 @@ const DocumentsPage = () => {
                       if (e.key === "Enter" || e.key === " ") handleView(entry);
                     }}
                   >
-                    <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
-                    <span className="flex-1 font-medium text-xs break-all">
+                    <FileIcon className="h-6 w-6 text-blue-500 mr-2 flex-shrink-0" />
+                    <span className="flex-1 font-medium text-xs break-words whitespace-normal">
                       {getBaseName(entry.name)}
                     </span>
                     {entry.size && (
-                      <span className="text-xs text-gray-600">{formatFileSize(entry.size)}</span>
+                      <span className="text-xs text-gray-600 whitespace-nowrap">{formatFileSize(entry.size)}</span>
                     )}
                     {entry.lastModified && (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
                         {new Date(entry.lastModified).toLocaleString()}
                       </span>
                     )}
@@ -696,7 +697,7 @@ const DocumentsPage = () => {
                         e.stopPropagation();
                         handleDownload(entry);
                       }}
-                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 flex-shrink-0"
                       tabIndex={-1}
                       title="Download"
                       type="button"
