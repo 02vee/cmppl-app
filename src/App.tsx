@@ -456,15 +456,18 @@ function customSort(a: Entry, b: Entry) {
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
-// ---- MAIN COMPONENT ----
+// Utility to detect mobile devices
+function isMobileDevice() {
+  return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+}
+
 const DocumentsPage = () => {
-  const [folderStack, setFolderStack] = useState<string[]>([]); // Array of prefixes
+  const [folderStack, setFolderStack] = useState<string[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState<string>("");
   const [viewDoc, setViewDoc] = useState<Entry | null>(null);
 
-  // Fetch contents of current folder only
   const currentPrefix = folderStack.length ? folderStack[folderStack.length - 1] : "";
 
   const refresh = async () => {
@@ -496,14 +499,12 @@ const DocumentsPage = () => {
     // eslint-disable-next-line
   }, [currentPrefix]);
 
-  // Search filter
   const filtered = entries.filter(entry =>
     search
       ? entry.name.toLowerCase().includes(search.toLowerCase())
       : true
   );
 
-  // Custom sort: months, intial, final, folders, files
   const docsToShow = filtered.slice().sort(customSort);
 
   const handleFolderOpen = (entry: Entry) => {
@@ -532,6 +533,16 @@ const DocumentsPage = () => {
       window.URL.revokeObjectURL(url);
       a.remove();
     }, 500);
+  }
+
+  // Open in new tab for mobile, show preview for desktop
+  function handleView(doc: Entry) {
+    const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
+    if (isMobileDevice()) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      setViewDoc(doc);
+    }
   }
 
   const renderDocViewer = (doc: Entry) => {
@@ -661,12 +672,11 @@ const DocumentsPage = () => {
                   <li
                     key={entry.id}
                     className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all"
-                    onClick={() => setViewDoc(entry)}
-                    onDoubleClick={() => setViewDoc(entry)}
+                    onClick={() => handleView(entry)}
                     tabIndex={0}
                     role="button"
                     onKeyDown={e => {
-                      if (e.key === "Enter" || e.key === " ") setViewDoc(entry);
+                      if (e.key === "Enter" || e.key === " ") handleView(entry);
                     }}
                   >
                     <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
@@ -705,7 +715,8 @@ const DocumentsPage = () => {
           </div>
         </div>
       </div>
-      {viewDoc && (
+      {/* Only show the viewer on desktop */}
+      {viewDoc && !isMobileDevice() && (
         <div className="fixed inset-0 z-50 bg-white flex flex-col">
           <div className="flex items-center p-4 bg-blue-700 shadow">
             <button
