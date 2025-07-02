@@ -651,7 +651,7 @@ const DocumentsPage = () => {
                 entry.type === "folder" ? (
                   <li
                     key={entry.id}
-                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all w-full"
+                    className="flex items-center py-2 px-2 group cursor-pointer transition-all w-full"
                     onClick={() => handleFolderOpen(entry)}
                     tabIndex={0}
                     role="button"
@@ -659,7 +659,7 @@ const DocumentsPage = () => {
                       if (e.key === "Enter" || e.key === " ") handleFolderOpen(entry);
                     }}
                   >
-                    <FolderIcon className="h-6 w-6 text-yellow-500 mr-2 flex-shrink-0" />
+                    <FolderIcon className="h-5 w-5 text-yellow-500 mr-1 flex-shrink-0" />
                     <span className="flex-1 font-medium text-xs break-words whitespace-normal">
                       {entry.name}
                     </span>
@@ -668,12 +668,12 @@ const DocumentsPage = () => {
                         {new Date(entry.lastModified).toLocaleDateString()}
                       </span>
                     )}
-                    <ChevronRight className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                    <ChevronRight className="h-4 w-4 text-blue-500 flex-shrink-0 ml-1" />
                   </li>
                 ) : (
                   <li
                     key={entry.id}
-                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all w-full"
+                    className="flex items-center py-2 px-2 group cursor-pointer transition-all w-full"
                     onClick={() => handleView(entry)}
                     tabIndex={0}
                     role="button"
@@ -681,7 +681,7 @@ const DocumentsPage = () => {
                       if (e.key === "Enter" || e.key === " ") handleView(entry);
                     }}
                   >
-                    <FileIcon className="h-6 w-6 text-blue-500 mr-2 flex-shrink-0" />
+                    <FileIcon className="h-5 w-5 text-blue-500 mr-1 flex-shrink-0" />
                     <span className="flex-1 font-medium text-xs break-words whitespace-normal">
                       {getBaseName(entry.name)}
                     </span>
@@ -695,7 +695,7 @@ const DocumentsPage = () => {
                         e.stopPropagation();
                         handleDownload(entry);
                       }}
-                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 flex-shrink-0"
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 flex-shrink-0 ml-1"
                       tabIndex={-1}
                       title="Download"
                       type="button"
