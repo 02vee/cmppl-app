@@ -1112,7 +1112,7 @@ const AdminDocumentsPage = () => {
           return (
             <li
               key={doc.id}
-              className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all w-full min-w-0
+              className={`flex items-center gap-2 py-2 px-2 group cursor-pointer transition-all w-full min-w-0
                 ${isChecked ? "bg-blue-50" : ""}`}
               onClick={e => {
                 if ((e.target as HTMLElement).closest("input[type=checkbox],button")) return;
@@ -1146,12 +1146,12 @@ const AdminDocumentsPage = () => {
                   });
                 }}
                 onClick={e => e.stopPropagation()}
-                className="mr-2 flex-shrink-0"
+                className="mr-1 flex-shrink-0"
               />
               {doc.type === "folder" ? (
-                <FolderIcon className="h-6 w-6 text-yellow-500 mr-2 flex-shrink-0" />
+                <FolderIcon className="h-6 w-6 text-yellow-500 flex-shrink-0" />
               ) : (
-                <FileIcon className="h-6 w-6 text-blue-500 mr-2 flex-shrink-0" />
+                <FileIcon className="h-6 w-6 text-blue-500 flex-shrink-0" />
               )}
               <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-y-1">
                 <span className="font-medium text-xs break-words whitespace-normal min-w-0">
