@@ -320,8 +320,7 @@ const ADDRESSES = [
       "Ambuja Cements Ltd.",
       "Elegant business park,",
       "MIDC cross road B, JB Nagar, Andheri East,",
-      "Mumbai",
-      "Pin code: 400059",
+      "Mumbai, 400059",
       "Contact: +91 7030935351",
       "Email: alcofine.customercare@adani.com"
     ]
@@ -331,8 +330,7 @@ const ADDRESSES = [
     lines: [
       "Counto Microfine Products Pvt. Ltd.",
       "Plot No. 161-168, Pissurlem Industrial Estate",
-      "Pissurlem Sattari Goa",
-      "Pin code: 403530",
+      "Pissurlem Sattari Goa, 403530",
       "Contact: +91 9923593847"
     ]
   },
@@ -343,8 +341,7 @@ const ADDRESSES = [
       "Fourth Floor, Alcon House,",
       "Chalta No.72, P.T. Sr. No.19,",
       "Near Sai Baba Temple,",
-      "Kadamba Road, Panaji-Goa,",
-      "Pin code: 403006"
+      "Kadamba Road, Panaji-Goa, 403006"
     ]
   }
 ];
