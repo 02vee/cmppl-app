@@ -640,7 +640,6 @@ const DocumentsPage = () => {
               onChange={e => setSearch(e.target.value)}
               placeholder="Search documents..."
               className="border rounded px-3 py-2 w-full md:max-w-xs"
-              // removed md:w-1/3 for mobile friendliness
             />
             {loading && (
               <span className="ml-4 text-blue-600 animate-pulse font-medium">Loading...</span>
@@ -661,10 +660,12 @@ const DocumentsPage = () => {
                     }}
                   >
                     <FolderIcon className="h-6 w-6 text-yellow-500 mr-2 flex-shrink-0" />
-                    <span className="flex-1 font-medium text-xs break-words whitespace-normal">{entry.name}</span>
+                    <span className="flex-1 font-medium text-xs break-words whitespace-normal">
+                      {entry.name}
+                    </span>
                     {entry.lastModified && (
-                      <span className="text-xs text-gray-400 whitespace-nowrap">
-                        {new Date(entry.lastModified).toLocaleString()}
+                      <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
+                        {new Date(entry.lastModified).toLocaleDateString()}
                       </span>
                     )}
                     <ChevronRight className="h-4 w-4 text-blue-500 flex-shrink-0" />
@@ -684,12 +685,9 @@ const DocumentsPage = () => {
                     <span className="flex-1 font-medium text-xs break-words whitespace-normal">
                       {getBaseName(entry.name)}
                     </span>
-                    {entry.size && (
-                      <span className="text-xs text-gray-600 whitespace-nowrap">{formatFileSize(entry.size)}</span>
-                    )}
                     {entry.lastModified && (
-                      <span className="text-xs text-gray-400 whitespace-nowrap">
-                        {new Date(entry.lastModified).toLocaleString()}
+                      <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
+                        {new Date(entry.lastModified).toLocaleDateString()}
                       </span>
                     )}
                     <button
