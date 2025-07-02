@@ -850,15 +850,6 @@ const AdminDocumentsPage = () => {
     }
   }, [showModal, folderStack]);
 
-  // Helper: check if a file/folder exists at path
-  async function fileOrFolderExists(path: string): Promise<boolean> {
-    const parent = path.includes("/") ? path.substring(0, path.lastIndexOf("/")) : "";
-    const name = path.split("/").pop();
-    const { data, error } = await supabase.storage.from(BUCKET).list(parent, { limit: 1000 });
-    if (error || !data) return false;
-    return data.some(item => item.name === name);
-  }
-
   // Bulk delete/copy/cut/paste handlers
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
@@ -925,13 +916,6 @@ const AdminDocumentsPage = () => {
     setUploading(true);
     for (let node of clipboard.nodes) {
       const destPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + node.name;
-      const exists = await fileOrFolderExists(destPath);
-      if (exists) {
-        if (!window.confirm(`"${node.name}" already exists here. Do you want to replace it?`)) {
-          continue;
-        }
-        await deleteFileOrFolder(destPath, node.type === "folder");
-      }
       if (clipboard.type === "copy") {
         await copyFileOrFolder(node, destPath);
       }
@@ -983,14 +967,6 @@ const AdminDocumentsPage = () => {
     if (dragItem.current.type === "folder" && destPath.startsWith(dragItem.current.path)) {
       dragItem.current = null;
       return;
-    }
-    const exists = await fileOrFolderExists(destPath);
-    if (exists) {
-      if (!window.confirm(`"${dragItem.current.name}" already exists here. Do you want to replace it?`)) {
-        dragItem.current = null;
-        return;
-      }
-      await deleteFileOrFolder(destPath, dragItem.current.type === "folder");
     }
     setUploading(true);
     await moveFileOrFolder(dragItem.current.path, destPath, dragItem.current.type === "folder");
@@ -1282,21 +1258,10 @@ const AdminDocumentsPage = () => {
     setModalInput(doc.name);
     setShowModal("edit");
   };
-  // ---- UPDATED doAdd with existence check and confirmation ----
   const doAdd = async () => {
     setUploading(true);
     if (showModal === "folder" && modalInput.trim()) {
       const folderPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalInput);
-      const exists = await fileOrFolderExists(folderPath);
-      if (exists) {
-        if (!window.confirm(`Folder "${modalInput}" already exists. Do you want to replace it?`)) {
-          setUploading(false);
-          setShowModal(null);
-          setModalInput("");
-          return;
-        }
-        await deleteFileOrFolder(folderPath, true);
-      }
       await uploadFile(folderPath + "/.keep", new Blob([""], { type: "text/plain" }) as any as File);
       setShowModal(null);
       setModalInput("");
@@ -1305,13 +1270,6 @@ const AdminDocumentsPage = () => {
     if (showModal === "file" && modalFile) {
       for (const file of Array.from(modalFile)) {
         const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(file.name);
-        const exists = await fileOrFolderExists(path);
-        if (exists) {
-          if (!window.confirm(`File "${file.name}" already exists. Do you want to replace it?`)) {
-            continue;
-          }
-          await deleteFileOrFolder(path, false);
-        }
         await uploadFile(path, file);
       }
       setShowModal(null);
@@ -1327,15 +1285,6 @@ const AdminDocumentsPage = () => {
     if (!newName || newName === modalTarget.name) { setShowModal(null); return; }
     const prefix = modalTarget.path.substring(0, modalTarget.path.lastIndexOf("/"));
     const newPath = (prefix ? prefix + "/" : "") + newName + (modalTarget.type === "folder" ? "" : "");
-    const exists = await fileOrFolderExists(newPath);
-    if (exists) {
-      if (!window.confirm(`"${newName}" already exists. Do you want to replace it?`)) {
-        setShowModal(null);
-        setModalTarget(null);
-        return;
-      }
-      await deleteFileOrFolder(newPath, modalTarget.type === "folder");
-    }
     await moveFileOrFolder(modalTarget.path, newPath, modalTarget.type === "folder");
     setShowModal(null);
     setModalTarget(null);
@@ -1351,19 +1300,7 @@ const AdminDocumentsPage = () => {
   const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     setUploading(true);
-    // For each file, check if it exists before uploading.
-    for (const file of Array.from(e.target.files)) {
-      const relPath = (file as any).webkitRelativePath || file.name;
-      const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + relPath;
-      const exists = await fileOrFolderExists(path);
-      if (exists) {
-        if (!window.confirm(`File "${relPath}" already exists. Do you want to replace it?`)) {
-          continue;
-        }
-        await deleteFileOrFolder(path, false);
-      }
-      await uploadFile(path, file);
-    }
+    await uploadFilesWithFolders(getCurrentPrefix(), e.target.files);
     setUploading(false);
     await refresh();
   };
@@ -1411,18 +1348,8 @@ const AdminDocumentsPage = () => {
       allFiles = Array.from(e.dataTransfer.files);
     }
 
-    // Existence check for drag/drop uploads
-    for (const file of allFiles) {
-      const relPath = (file as any).webkitRelativePath || file.name;
-      const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + relPath;
-      const exists = await fileOrFolderExists(path);
-      if (exists) {
-        if (!window.confirm(`File "${relPath}" already exists. Do you want to replace it?`)) {
-          continue;
-        }
-        await deleteFileOrFolder(path, false);
-      }
-      await uploadFile(path, file);
+    if (allFiles.length > 0) {
+      await uploadFilesWithFolders(getCurrentPrefix(), allFiles);
     }
 
     setUploading(false);
