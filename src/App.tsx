@@ -660,7 +660,7 @@ const DocumentsPage = () => {
                     }}
                   >
                     <FolderIcon className="h-6 w-6 text-yellow-500 mr-2 flex-shrink-0" />
-                    <span className="flex-1 font-medium text-xs min-w-0 max-w-full overflow-hidden break-words whitespace-normal">{entry.name}</span>
+                    <span className="flex-1 font-medium text-xs min-w-0 break-words whitespace-normal">{entry.name}</span>
                     {entry.lastModified && (
                       <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
                         {new Date(entry.lastModified).toLocaleString()}
@@ -680,9 +680,7 @@ const DocumentsPage = () => {
                     }}
                   >
                     <FileIcon className="h-6 w-6 text-blue-500 mr-2 flex-shrink-0" />
-                    <span className="flex-1 font-medium text-xs min-w-0 max-w-full overflow-hidden break-words whitespace-normal">
-                      {getBaseName(entry.name)}
-                    </span>
+                    <span className="flex-1 font-medium text-xs min-w-0 break-words whitespace-normal">{getBaseName(entry.name)}</span>
                     {entry.size && (
                       <span className="text-xs text-gray-600 whitespace-nowrap flex-shrink-0">{formatFileSize(entry.size)}</span>
                     )}
