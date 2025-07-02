@@ -456,6 +456,11 @@ function customSort(a: Entry, b: Entry) {
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
+// Utility to detect mobile devices
+function isMobileDevice() {
+  return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+}
+
 const DocumentsPage = () => {
   const [folderStack, setFolderStack] = useState<string[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -530,9 +535,14 @@ const DocumentsPage = () => {
     }, 500);
   }
 
-  // Always show the in-app preview, even for mobile
+  // Open in new tab for mobile, show preview for desktop
   function handleView(doc: Entry) {
-    setViewDoc(doc);
+    const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
+    if (isMobileDevice()) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      setViewDoc(doc);
+    }
   }
 
   const renderDocViewer = (doc: Entry) => {
@@ -661,10 +671,9 @@ const DocumentsPage = () => {
                     <ChevronRight className="h-4 w-4 text-blue-500 flex-shrink-0 ml-1" />
                   </li>
                 ) : (
-                  // Responsive stacked layout for long file names
                   <li
                     key={entry.id}
-                    className="py-2 px-2 group cursor-pointer transition-all w-full"
+                    className="flex items-center py-2 px-2 group cursor-pointer transition-all w-full"
                     onClick={() => handleView(entry)}
                     tabIndex={0}
                     role="button"
@@ -672,52 +681,27 @@ const DocumentsPage = () => {
                       if (e.key === "Enter" || e.key === " ") handleView(entry);
                     }}
                   >
-                    <div className="flex items-start md:items-center flex-wrap md:flex-nowrap w-full">
-                      <FileIcon className="h-5 w-5 text-blue-500 mr-1 flex-shrink-0 mt-1 md:mt-0" />
-                      <span className="flex-1 font-medium text-xs break-words whitespace-normal">
-                        {getBaseName(entry.name)}
+                    <FileIcon className="h-5 w-5 text-blue-500 mr-1 flex-shrink-0" />
+                    <span className="flex-1 font-medium text-xs break-words whitespace-normal">
+                      {getBaseName(entry.name)}
+                    </span>
+                    {entry.lastModified && (
+                      <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
+                        {new Date(entry.lastModified).toLocaleDateString()}
                       </span>
-                      {/* Desktop: inline date+button, Mobile: hidden */}
-                      <div className="hidden md:flex items-center ml-2 flex-shrink-0">
-                        {entry.lastModified && (
-                          <span className="text-xs text-gray-400 whitespace-nowrap mr-2">
-                            {new Date(entry.lastModified).toLocaleDateString()}
-                          </span>
-                        )}
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleDownload(entry);
-                          }}
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 flex-shrink-0"
-                          tabIndex={-1}
-                          title="Download"
-                          type="button"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    {/* Mobile: stacked date+button below name */}
-                    <div className="flex md:hidden items-center justify-between mt-1 pl-6">
-                      {entry.lastModified && (
-                        <span className="text-xs text-gray-400 whitespace-nowrap">
-                          {new Date(entry.lastModified).toLocaleDateString()}
-                        </span>
-                      )}
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleDownload(entry);
-                        }}
-                        className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 flex-shrink-0 ml-2"
-                        tabIndex={-1}
-                        title="Download"
-                        type="button"
-                      >
-                        <Download className="h-4 w-4" />
-                      </button>
-                    </div>
+                    )}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleDownload(entry);
+                      }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 flex-shrink-0 ml-1"
+                      tabIndex={-1}
+                      title="Download"
+                      type="button"
+                    >
+                      <Download className="h-4 w-4" />
+                    </button>
                   </li>
                 )
               )}
@@ -730,8 +714,8 @@ const DocumentsPage = () => {
           </div>
         </div>
       </div>
-      {/* Show the viewer on all devices */}
-      {viewDoc && (
+      {/* Only show the viewer on desktop */}
+      {viewDoc && !isMobileDevice() && (
         <div className="fixed inset-0 z-50 bg-white flex flex-col">
           <div className="flex items-center p-4 bg-blue-700 shadow">
             <button
