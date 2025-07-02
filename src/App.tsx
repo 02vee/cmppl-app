@@ -452,6 +452,11 @@ function customSort(a: Entry, b: Entry) {
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
+// Utility to detect mobile devices
+function isMobileDevice() {
+  return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+}
+
 const DocumentsPage = () => {
   const [folderStack, setFolderStack] = useState<string[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -526,9 +531,14 @@ const DocumentsPage = () => {
     }, 500);
   }
 
-  // Always show in-app preview for all devices
+  // Open in new tab for mobile, show preview for desktop
   function handleView(doc: Entry) {
-    setViewDoc(doc);
+    const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
+    if (isMobileDevice()) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      setViewDoc(doc);
+    }
   }
 
   const renderDocViewer = (doc: Entry) => {
@@ -585,24 +595,22 @@ const DocumentsPage = () => {
   });
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden bg-gradient-to-br from-blue-50 to-slate-100 p-2">
-      <div className="max-w-3xl w-full">
-        <div className="bg-white/90 rounded-2xl shadow-2xl p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between mb-2">
-            <h2 className="text-xl sm:text-2xl font-bold flex items-center text-blue-700">
-              <FolderIcon className="mr-2 h-6 w-6" /> Documents
-            </h2>
-            <Link to="/" className="inline-flex items-center text-blue-600 mt-2 sm:mt-0 hover:underline">
-              <Home className="mr-1 h-5 w-5" /> Home
-            </Link>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
+      <div className="max-w-6xl mx-auto">
+        <Link to="/" className="inline-flex items-center text-blue-600 mb-4 hover:underline">
+          <Home className="mr-1 h-5 w-5" /> Back to Home
+        </Link>
+        <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
+          <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700">
+            <FolderIcon className="mr-2 h-6 w-6" /> Documents
+          </h2>
           {/* Breadcrumbs */}
-          <nav className="flex items-center flex-wrap mb-4">
+          <nav className="flex items-center mb-4">
             {crumbs.map((c, i) => (
-              <span key={c.prefix} className="flex items-center max-w-[150px]">
+              <span key={c.prefix} className="flex items-center">
                 <button
                   onClick={() => setFolderStack(folderStack.slice(0, i))}
-                  className="text-blue-600 hover:underline font-bold truncate"
+                  className="text-blue-600 hover:underline font-bold"
                 >
                   {c.name}
                 </button>
@@ -627,19 +635,19 @@ const DocumentsPage = () => {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search documents..."
-              className="border rounded px-3 py-2 w-full sm:max-w-xs"
+              className="border rounded px-3 py-2 w-full md:max-w-xs"
             />
             {loading && (
               <span className="ml-4 text-blue-600 animate-pulse font-medium">Loading...</span>
             )}
           </div>
-          <div className="border rounded-xl p-2 sm:p-4 bg-gray-50/60">
+          <div className="border rounded-xl p-4 bg-gray-50/60">
             <ul className="divide-y divide-gray-200 mt-2">
               {docsToShow.map(entry =>
                 entry.type === "folder" ? (
                   <li
                     key={entry.id}
-                    className="flex items-start sm:items-center py-2 px-2 group cursor-pointer transition-all w-full"
+                    className="flex items-center py-2 px-2 group cursor-pointer transition-all w-full"
                     onClick={() => handleFolderOpen(entry)}
                     tabIndex={0}
                     role="button"
@@ -647,23 +655,21 @@ const DocumentsPage = () => {
                       if (e.key === "Enter" || e.key === " ") handleFolderOpen(entry);
                     }}
                   >
-                    <FolderIcon className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-1 sm:mt-0" />
-                    <div className="flex flex-col w-full">
-                      <span className="font-medium text-xs sm:text-sm break-words whitespace-normal w-full">
-                        {entry.name}
+                    <FolderIcon className="h-5 w-5 text-yellow-500 mr-1 flex-shrink-0" />
+                    <span className="flex-1 font-medium text-xs break-words whitespace-normal">
+                      {entry.name}
+                    </span>
+                    {entry.lastModified && (
+                      <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
+                        {new Date(entry.lastModified).toLocaleDateString()}
                       </span>
-                      {entry.lastModified && (
-                        <span className="text-xs text-gray-400 whitespace-nowrap mt-1 sm:mt-0">
-                          {new Date(entry.lastModified).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-blue-500 flex-shrink-0 ml-2 mt-1 sm:mt-0" />
+                    )}
+                    <ChevronRight className="h-4 w-4 text-blue-500 flex-shrink-0 ml-1" />
                   </li>
                 ) : (
                   <li
                     key={entry.id}
-                    className="flex items-start sm:items-center py-2 px-2 group cursor-pointer transition-all w-full"
+                    className="flex items-center py-2 px-2 group cursor-pointer transition-all w-full"
                     onClick={() => handleView(entry)}
                     tabIndex={0}
                     role="button"
@@ -671,31 +677,27 @@ const DocumentsPage = () => {
                       if (e.key === "Enter" || e.key === " ") handleView(entry);
                     }}
                   >
-                    <FileIcon className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-1 sm:mt-0" />
-                    <div className="flex flex-col w-full">
-                      <span className="font-medium text-xs sm:text-sm break-words whitespace-normal w-full">
-                        {getBaseName(entry.name)}
+                    <FileIcon className="h-5 w-5 text-blue-500 mr-1 flex-shrink-0" />
+                    <span className="flex-1 font-medium text-xs break-words whitespace-normal">
+                      {getBaseName(entry.name)}
+                    </span>
+                    {entry.lastModified && (
+                      <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
+                        {new Date(entry.lastModified).toLocaleDateString()}
                       </span>
-                      <div className="flex items-center flex-wrap gap-2 mt-1 sm:mt-0">
-                        {entry.lastModified && (
-                          <span className="text-xs text-gray-400 whitespace-nowrap">
-                            {new Date(entry.lastModified).toLocaleDateString()}
-                          </span>
-                        )}
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleDownload(entry);
-                          }}
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 flex-shrink-0"
-                          tabIndex={-1}
-                          title="Download"
-                          type="button"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
+                    )}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleDownload(entry);
+                      }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 flex-shrink-0 ml-1"
+                      tabIndex={-1}
+                      title="Download"
+                      type="button"
+                    >
+                      <Download className="h-4 w-4" />
+                    </button>
                   </li>
                 )
               )}
@@ -708,8 +710,8 @@ const DocumentsPage = () => {
           </div>
         </div>
       </div>
-      {/* Show the viewer on all devices */}
-      {viewDoc && (
+      {/* Only show the viewer on desktop */}
+      {viewDoc && !isMobileDevice() && (
         <div className="fixed inset-0 z-50 bg-white flex flex-col">
           <div className="flex items-center p-4 bg-blue-700 shadow">
             <button
