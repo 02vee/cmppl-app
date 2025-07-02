@@ -595,22 +595,23 @@ const DocumentsPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4 overflow-y-auto overflow-x-hidden w-full">
+      <div className="max-w-3xl w-full mx-auto">
         <Link to="/" className="inline-flex items-center text-blue-600 mb-4 hover:underline">
           <Home className="mr-1 h-5 w-5" /> Back to Home
         </Link>
-        <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
+        <div className="bg-white/90 rounded-2xl shadow-2xl p-4 sm:p-6 w-full">
           <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700">
             <FolderIcon className="mr-2 h-6 w-6" /> Documents
           </h2>
           {/* Breadcrumbs */}
-          <nav className="flex items-center mb-4">
+          <nav className="flex flex-wrap items-center mb-4 gap-y-1 overflow-x-hidden w-full">
             {crumbs.map((c, i) => (
-              <span key={c.prefix} className="flex items-center">
+              <span key={c.prefix} className="flex items-center min-w-0">
                 <button
                   onClick={() => setFolderStack(folderStack.slice(0, i))}
-                  className="text-blue-600 hover:underline font-bold"
+                  className="text-blue-600 hover:underline font-bold truncate"
+                  style={{ maxWidth: 120 }}
                 >
                   {c.name}
                 </button>
@@ -641,13 +642,13 @@ const DocumentsPage = () => {
               <span className="ml-4 text-blue-600 animate-pulse font-medium">Loading...</span>
             )}
           </div>
-          <div className="border rounded-xl p-4 bg-gray-50/60">
+          <div className="border rounded-xl p-4 bg-gray-50/60 w-full overflow-x-hidden">
             <ul className="divide-y divide-gray-200 mt-2">
               {docsToShow.map(entry =>
                 entry.type === "folder" ? (
                   <li
                     key={entry.id}
-                    className="flex items-center py-2 px-2 group cursor-pointer transition-all w-full"
+                    className="flex items-center py-2 px-2 group cursor-pointer transition-all w-full min-w-0"
                     onClick={() => handleFolderOpen(entry)}
                     tabIndex={0}
                     role="button"
@@ -656,7 +657,7 @@ const DocumentsPage = () => {
                     }}
                   >
                     <FolderIcon className="h-5 w-5 text-yellow-500 mr-1 flex-shrink-0" />
-                    <span className="flex-1 font-medium text-xs break-words whitespace-normal">
+                    <span className="flex-1 font-medium text-xs break-words whitespace-normal min-w-0">
                       {entry.name}
                     </span>
                     {entry.lastModified && (
@@ -669,7 +670,7 @@ const DocumentsPage = () => {
                 ) : (
                   <li
                     key={entry.id}
-                    className="flex items-center py-2 px-2 group cursor-pointer transition-all w-full"
+                    className="flex items-center py-2 px-2 group cursor-pointer transition-all w-full min-w-0"
                     onClick={() => handleView(entry)}
                     tabIndex={0}
                     role="button"
@@ -678,7 +679,7 @@ const DocumentsPage = () => {
                     }}
                   >
                     <FileIcon className="h-5 w-5 text-blue-500 mr-1 flex-shrink-0" />
-                    <span className="flex-1 font-medium text-xs break-words whitespace-normal">
+                    <span className="flex-1 font-medium text-xs break-words whitespace-normal min-w-0">
                       {getBaseName(entry.name)}
                     </span>
                     {entry.lastModified && (
