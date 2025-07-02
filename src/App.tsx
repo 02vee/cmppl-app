@@ -1070,7 +1070,7 @@ const AdminDocumentsPage = () => {
     </div>
   );
 
-  // Breadcrumbs
+  // Breadcrumbs (no horizontal scroll, wraps, truncates long names)
   let crumbs: { name: string, id: string, path: string[] }[] = [{ name: "Root", id: "root", path: [] }];
   let node = tree;
   let pathArr: string[] = [];
@@ -1083,10 +1083,16 @@ const AdminDocumentsPage = () => {
     }
   }
   const renderBreadcrumbs = () => (
-    <nav className="flex items-center mb-4">
+    <nav className="flex flex-wrap items-center mb-4 gap-y-1 overflow-x-hidden w-full">
       {crumbs.map((c, i) => (
-        <span key={c.id} className="flex items-center">
-          <button onClick={() => setFolderStack(c.path)} className="text-blue-600 hover:underline font-bold">{c.name}</button>
+        <span key={c.id} className="flex items-center min-w-0">
+          <button
+            onClick={() => setFolderStack(c.path)}
+            className="text-blue-600 hover:underline font-bold truncate"
+            style={{ maxWidth: 120 }}
+          >
+            {c.name}
+          </button>
           {i < crumbs.length - 1 && <ChevronRight className="h-4 w-4 mx-1 text-gray-300" />}
         </span>
       ))}
@@ -1106,10 +1112,9 @@ const AdminDocumentsPage = () => {
           return (
             <li
               key={doc.id}
-              className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all
+              className={`flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all w-full min-w-0
                 ${isChecked ? "bg-blue-50" : ""}`}
               onClick={e => {
-                // Only navigate if NOT clicking checkbox or button
                 if ((e.target as HTMLElement).closest("input[type=checkbox],button")) return;
                 if (doc.type === "folder") setFolderStack([...folderStack, doc.id]);
               }}
@@ -1146,19 +1151,19 @@ const AdminDocumentsPage = () => {
               {doc.type === "folder" ? (
                 <>
                   <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
-                  <span className="flex-1 font-medium text-xs break-all">{doc.name}</span>
+                  <span className="flex-1 font-medium text-xs break-all min-w-0">{doc.name}</span>
                 </>
               ) : (
                 <>
                   <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
-                  <span className="flex-1 font-medium text-xs break-all">{getBaseName(doc.name)}</span>
+                  <span className="flex-1 font-medium text-xs break-all min-w-0">{getBaseName(doc.name)}</span>
                 </>
               )}
               {doc.size && doc.type === "file" && (
-                <span className="text-xs text-gray-600">{formatFileSize(doc.size)}</span>
+                <span className="text-xs text-gray-600 whitespace-nowrap">{formatFileSize(doc.size)}</span>
               )}
               {doc.lastModified && (
-                <span className="text-xs text-gray-400">{new Date(doc.lastModified).toLocaleString()}</span>
+                <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(doc.lastModified).toLocaleString()}</span>
               )}
               {doc.type === "folder" ? (
                 <>
@@ -1355,26 +1360,26 @@ const AdminDocumentsPage = () => {
   // --- Main Render ---
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4"
+      className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4 overflow-y-auto overflow-x-hidden w-full"
       tabIndex={0}
       ref={mainRef}
       onKeyDown={handleKeyDown}
       onDrop={handleGlobalDrop}
       onDragOver={handleGlobalDragOver}
     >
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl w-full mx-auto">
         <button
           className="inline-flex items-center text-blue-600 mb-4 hover:underline"
           onClick={() => window.history.back()}
         >
           <ArrowLeft className="mr-1 h-5 w-5" /> Back to Dashboard
         </button>
-        <div className="bg-white/90 rounded-2xl shadow-2xl p-8">
+        <div className="bg-white/90 rounded-2xl shadow-2xl p-8 w-full">
           <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700">
             <FolderIcon className="mr-2 h-6 w-6" /> Manage Documents
           </h2>
           {renderBreadcrumbs()}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             <button
               className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded disabled:opacity-50"
               disabled={selected.size === 0}
@@ -1399,7 +1404,7 @@ const AdminDocumentsPage = () => {
               {selected.size > 0 && `${selected.size} selected`}
             </span>
           </div>
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
             <input
               type="text"
               value={search}
@@ -1428,7 +1433,7 @@ const AdminDocumentsPage = () => {
               <button className="bg-gray-200 px-3 py-2 rounded-lg flex items-center gap-1 font-semibold shadow hover:bg-gray-300 transition" onClick={() => setFolderStack(folderStack.slice(0, -1))}><ArrowLeft className="h-4 w-4" />Back</button>
             )}
           </div>
-          <div className="border rounded-xl p-4 bg-gray-50/60">
+          <div className="border rounded-xl p-4 bg-gray-50/60 w-full overflow-x-hidden">
             {docsToShow.length ? renderTree(docsToShow) : <p className="text-gray-400">Empty folder</p>}
           </div>
         </div>
