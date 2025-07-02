@@ -347,31 +347,30 @@ const ADDRESSES = [
 ];
 
 const ContactUsPage = () => (
-  <div className="relative min-h-screen flex flex-col items-center justify-center overflow-x-hidden">
+  <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200">
     {/* Decorative SVG Wave */}
-    <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{height: '220px', minHeight: '140px'}}>
+    <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{ height: '100px', minHeight: '60px' }}>
       <svg viewBox="0 0 1440 320" className="w-full h-full">
         <path fill="#3b82f6" fillOpacity="0.23" d="M0,256L60,245.3C120,235,240,213,360,213.3C480,213,600,235,720,229.3C840,224,960,192,1080,186.7C1200,181,1320,203,1380,213.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
       </svg>
     </div>
-    <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200" />
-    <div className="relative z-10 w-full flex flex-col items-center justify-center pt-12 pb-8">
-      <h2 className="text-4xl font-extrabold text-blue-700 mb-8 drop-shadow">Contact Us</h2>
-      <div className="relative w-full max-w-xl mx-auto">
-        <div className="absolute left-6 top-0 h-full w-1 bg-blue-200 rounded"></div>
-        <div className="flex flex-col gap-12">
+    <div className="relative z-10 w-full flex flex-col items-center justify-center pt-6 pb-2">
+      <h2 className="text-2xl md:text-3xl font-extrabold text-blue-700 mb-5 drop-shadow text-center">Contact Us</h2>
+      <div className="relative w-full max-w-md sm:max-w-lg mx-auto">
+        <div className="absolute left-4 top-0 h-full w-0.5 bg-blue-200 rounded"></div>
+        <div className="flex flex-col gap-6">
           {ADDRESSES.map((addr, idx) => (
-            <div key={addr.label} className="relative flex items-start gap-6">
-              {/* Empty circle for visual timeline, but no number */}
+            <div key={addr.label} className="relative flex items-start gap-3">
+              {/* Timeline Dot */}
               <div className="flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-blue-300 flex items-center justify-center shadow" />
+                <div className="w-5 h-5 rounded-full bg-blue-100 border-2 border-blue-300 flex items-center justify-center shadow" />
                 {idx < ADDRESSES.length - 1 && (
-                  <div className="flex-1 w-1 bg-blue-200 my-2" style={{ minHeight: 30 }}></div>
+                  <div className="flex-1 w-0.5 bg-blue-200 my-1" style={{ minHeight: 16 }}></div>
                 )}
               </div>
-              <div className="bg-white/90 rounded-2xl shadow-2xl p-6 border border-blue-100 w-full">
-                <h3 className="text-lg font-bold text-blue-700 mb-2">{addr.label}</h3>
-                <ul className="text-gray-600 text-sm space-y-1">
+              <div className="bg-white/95 rounded-xl shadow-xl p-3 sm:p-4 border border-blue-100 w-full">
+                <h3 className="text-base sm:text-lg font-bold text-blue-700 mb-1">{addr.label}</h3>
+                <ul className="text-gray-600 text-xs sm:text-sm space-y-0.5">
                   {addr.lines.map((line, i) => (
                     <li key={i}>{line}</li>
                   ))}
@@ -383,7 +382,7 @@ const ContactUsPage = () => (
       </div>
     </div>
     {/* Decorative SVG at the bottom */}
-    <div className="absolute bottom-0 left-0 w-full pointer-events-none z-0" style={{height: '100px', minHeight: '60px'}}>
+    <div className="absolute bottom-0 left-0 w-full pointer-events-none z-0" style={{ height: '55px', minHeight: '40px' }}>
       <svg viewBox="0 0 1440 320" className="w-full h-full">
         <path fill="#3b82f6" fillOpacity="0.17" d="M0,32L120,37.3C240,43,480,53,720,53.3C960,53,1200,43,1320,37.3L1440,32L1440,320L1320,320C1200,320,960,320,720,320C480,320,240,320,120,320L0,320Z"></path>
       </svg>
