@@ -1146,75 +1146,78 @@ const AdminDocumentsPage = () => {
                   });
                 }}
                 onClick={e => e.stopPropagation()}
-                className="mr-2"
+                className="mr-2 flex-shrink-0"
               />
               {doc.type === "folder" ? (
-                <>
-                  <FolderIcon className="h-6 w-6 text-yellow-500 mr-2" />
-                  <span className="flex-1 font-medium text-xs break-all min-w-0">{doc.name}</span>
-                </>
+                <FolderIcon className="h-6 w-6 text-yellow-500 mr-2 flex-shrink-0" />
               ) : (
-                <>
-                  <FileIcon className="h-6 w-6 text-blue-500 mr-2" />
-                  <span className="flex-1 font-medium text-xs break-all min-w-0">{getBaseName(doc.name)}</span>
-                </>
+                <FileIcon className="h-6 w-6 text-blue-500 mr-2 flex-shrink-0" />
               )}
-              {doc.size && doc.type === "file" && (
-                <span className="text-xs text-gray-600 whitespace-nowrap">{formatFileSize(doc.size)}</span>
-              )}
-              {doc.lastModified && (
-                <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(doc.lastModified).toLocaleString()}</span>
-              )}
-              {doc.type === "folder" ? (
-                <>
-                  <button
-                    onClick={e => { e.stopPropagation(); handleRename(doc); }}
-                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                    tabIndex={-1}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={e => { e.stopPropagation(); handleDelete(doc); }}
-                    className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
-                    tabIndex={-1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.id]); }}
-                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                    tabIndex={-1}
-                    title="Open"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={e => { e.stopPropagation(); setViewDoc(doc); }}
-                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                    tabIndex={-1}
-                  >
-                    View
-                  </button>
-                  <button
-                    onClick={e => { e.stopPropagation(); handleRename(doc); }}
-                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                    tabIndex={-1}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={e => { e.stopPropagation(); handleDelete(doc); }}
-                    className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
-                    tabIndex={-1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </>
-              )}
+              <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-y-1">
+                <span className="font-medium text-xs break-words whitespace-normal min-w-0">
+                  {doc.type === "folder" ? doc.name : getBaseName(doc.name)}
+                </span>
+                <div className="flex flex-row flex-wrap gap-x-2 gap-y-1 sm:ml-4">
+                  {doc.size && doc.type === "file" && (
+                    <span className="text-xs text-gray-600 whitespace-nowrap">{formatFileSize(doc.size)}</span>
+                  )}
+                  {doc.lastModified && (
+                    <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(doc.lastModified).toLocaleString()}</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-1 flex-shrink-0 ml-2">
+                {doc.type === "folder" ? (
+                  <>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleRename(doc); }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                      tabIndex={-1}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDelete(doc); }}
+                      className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
+                      tabIndex={-1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setFolderStack([...folderStack, doc.id]); }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                      tabIndex={-1}
+                      title="Open"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={e => { e.stopPropagation(); setViewDoc(doc); }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                      tabIndex={-1}
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleRename(doc); }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
+                      tabIndex={-1}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDelete(doc); }}
+                      className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
+                      tabIndex={-1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
+              </div>
             </li>
           );
         })}
