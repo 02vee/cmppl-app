@@ -462,11 +462,11 @@ function isMobileDevice() {
 }
 
 const DocumentsPage = () => {
-  const [folderStack, setFolderStack] = React.useState<string[]>([]);
-  const [entries, setEntries] = React.useState<Entry[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [search, setSearch] = React.useState<string>("");
-  const [viewDoc, setViewDoc] = React.useState<Entry | null>(null);
+  const [folderStack, setFolderStack] = useState<string[]>([]);
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState<string>("");
+  const [viewDoc, setViewDoc] = useState<Entry | null>(null);
 
   const currentPrefix = folderStack.length ? folderStack[folderStack.length - 1] : "";
 
@@ -494,7 +494,7 @@ const DocumentsPage = () => {
     setLoading(false);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     refresh();
     // eslint-disable-next-line
   }, [currentPrefix]);
@@ -640,18 +640,19 @@ const DocumentsPage = () => {
               onChange={e => setSearch(e.target.value)}
               placeholder="Search documents..."
               className="border rounded px-3 py-2 w-full md:max-w-xs"
+              // removed md:w-1/3 for mobile friendliness
             />
             {loading && (
               <span className="ml-4 text-blue-600 animate-pulse font-medium">Loading...</span>
             )}
           </div>
-          <div className="border rounded-xl p-4 bg-gray-50/60 overflow-x-hidden">
+          <div className="border rounded-xl p-4 bg-gray-50/60">
             <ul className="divide-y divide-gray-200 mt-2">
               {docsToShow.map(entry =>
                 entry.type === "folder" ? (
                   <li
                     key={entry.id}
-                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all min-w-0"
+                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all w-full"
                     onClick={() => handleFolderOpen(entry)}
                     tabIndex={0}
                     role="button"
@@ -660,9 +661,9 @@ const DocumentsPage = () => {
                     }}
                   >
                     <FolderIcon className="h-6 w-6 text-yellow-500 mr-2 flex-shrink-0" />
-                    <span className="flex-1 font-medium text-xs min-w-0 break-words whitespace-normal">{entry.name}</span>
+                    <span className="flex-1 font-medium text-xs break-words whitespace-normal">{entry.name}</span>
                     {entry.lastModified && (
-                      <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
                         {new Date(entry.lastModified).toLocaleString()}
                       </span>
                     )}
@@ -671,7 +672,7 @@ const DocumentsPage = () => {
                 ) : (
                   <li
                     key={entry.id}
-                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all min-w-0"
+                    className="flex items-center gap-3 py-2 px-2 group cursor-pointer transition-all w-full"
                     onClick={() => handleView(entry)}
                     tabIndex={0}
                     role="button"
@@ -680,12 +681,14 @@ const DocumentsPage = () => {
                     }}
                   >
                     <FileIcon className="h-6 w-6 text-blue-500 mr-2 flex-shrink-0" />
-                    <span className="flex-1 font-medium text-xs min-w-0 break-words whitespace-normal">{getBaseName(entry.name)}</span>
+                    <span className="flex-1 font-medium text-xs break-words whitespace-normal">
+                      {getBaseName(entry.name)}
+                    </span>
                     {entry.size && (
-                      <span className="text-xs text-gray-600 whitespace-nowrap flex-shrink-0">{formatFileSize(entry.size)}</span>
+                      <span className="text-xs text-gray-600 whitespace-nowrap">{formatFileSize(entry.size)}</span>
                     )}
                     {entry.lastModified && (
-                      <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
                         {new Date(entry.lastModified).toLocaleString()}
                       </span>
                     )}
