@@ -456,11 +456,6 @@ function customSort(a: Entry, b: Entry) {
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
-// Utility to detect mobile devices
-function isMobileDevice() {
-  return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-}
-
 const DocumentsPage = () => {
   const [folderStack, setFolderStack] = useState<string[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
