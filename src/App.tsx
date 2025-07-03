@@ -522,7 +522,7 @@ const DocumentsPage = () => {
   // Logout handler for public docs
   const handleLogout = () => {
     localStorage.removeItem('isPublicDocsAuthenticated');
-    navigate("/documents/login");
+    navigate("/");
   };
 
   const currentPrefix = folderStack.length ? folderStack[folderStack.length - 1] : "";
