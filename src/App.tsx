@@ -399,8 +399,8 @@ const PublicDocsLogin = () => {
   const navigate = useNavigate();
 
   // Set/change your public credentials here:
-  const PUBLIC_DOC_USERNAME = "cmppl";
-  const PUBLIC_DOC_PASSWORD = "Cmppl789";
+  const PUBLIC_DOC_USERNAME = "Alccofine";
+  const PUBLIC_DOC_PASSWORD = "Alccofine03";
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
