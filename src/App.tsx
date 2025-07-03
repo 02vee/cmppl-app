@@ -322,7 +322,7 @@ const ADDRESSES = [
       "MIDC cross road B, JB Nagar, Andheri East,",
       "Mumbai, 400059",
       "Contact: +91 7030935351",
-      "Email: alcofine.customercare@adani.com"
+      "Email: alccofine.customercare@adani.com"
     ]
   },
   {
