@@ -517,9 +517,9 @@ const DocumentsPage = () => {
   const [search, setSearch] = useState<string>("");
   const [viewDoc, setViewDoc] = useState<Entry | null>(null);
 
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-  // Add logout handler for public docs
+  // Logout handler for public docs
   const handleLogout = () => {
     localStorage.removeItem('isPublicDocsAuthenticated');
     navigate("/documents/login");
@@ -592,7 +592,6 @@ const DocumentsPage = () => {
     }, 500);
   }
 
-  // Open in new tab for mobile, show preview for desktop
   function handleView(doc: Entry) {
     const url = supabase.storage.from(BUCKET).getPublicUrl(doc.path).data.publicUrl;
     if (isMobileDevice()) {
@@ -656,20 +655,19 @@ const DocumentsPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4 overflow-y-auto overflow-x-hidden w-full relative">
-      {/* LOGOUT BUTTON */}
-      <button
-        onClick={handleLogout}
-        className="absolute top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded z-10"
-      >
-        Logout
-      </button>
-
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4 overflow-y-auto overflow-x-hidden w-full">
       <div className="max-w-3xl w-full mx-auto">
         <Link to="/" className="inline-flex items-center text-blue-600 mb-4 hover:underline">
           <Home className="mr-1 h-5 w-5" /> Back to Home
         </Link>
-        <div className="bg-white/90 rounded-2xl shadow-2xl p-4 sm:p-6 w-full">
+        <div className="bg-white/90 rounded-2xl shadow-2xl p-4 sm:p-6 w-full relative">
+          {/* LOGOUT BUTTON INSIDE CARD */}
+          <button
+            onClick={handleLogout}
+            className="absolute top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded z-10"
+          >
+            Logout
+          </button>
           <h2 className="text-2xl font-bold mb-4 flex items-center text-blue-700">
             <FolderIcon className="mr-2 h-6 w-6" /> Documents
           </h2>
