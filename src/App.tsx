@@ -329,7 +329,8 @@ const ADDRESSES = [
     label: "Factory Address",
     lines: [
       "Counto Microfine Products Pvt. Ltd.",
-      "Plot No. 161-168, Pissurlem Industrial Estate",
+      "Plot No. 161-168, Pissurlem Industrial Estate"
+      ,
       "Pissurlem Sattari Goa, 403530",
       "Contact: +91 9923593847"
     ]
@@ -389,6 +390,58 @@ const ContactUsPage = () => (
     </div>
   </div>
 );
+
+//---------------------- Public Docs Login Page ----------------------//
+const PublicDocsLogin = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  // Set/change your public credentials here:
+  const PUBLIC_DOC_USERNAME = "cmppl";
+  const PUBLIC_DOC_PASSWORD = "Cmppl789";
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username === PUBLIC_DOC_USERNAME && password === PUBLIC_DOC_PASSWORD) {
+      localStorage.setItem('isPublicDocsAuthenticated', 'true');
+      navigate('/documents');
+    } else setError('Invalid username or password');
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100 p-4">
+      <form onSubmit={handleLogin} className="w-full max-w-md bg-white/95 rounded-2xl shadow-2xl p-8 space-y-5">
+        <h2 className="text-2xl font-bold mb-3 text-center text-blue-700">Documents Login</h2>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+          <input type="text" value={username} onChange={e => setUsername(e.target.value)}
+            className="w-full p-3 border-2 border-blue-100 rounded-lg" required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+            className="w-full p-3 border-2 border-blue-100 rounded-lg" required />
+        </div>
+        {error && <div className="text-red-500 text-sm">{error}</div>}
+        <button type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold shadow transition">
+          Login
+        </button>
+      </form>
+    </div>
+  );
+};
+
+//---------------------- Public Protected Route ----------------------//
+const PublicProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const isAuthenticated = localStorage.getItem('isPublicDocsAuthenticated') === 'true';
+  if (!isAuthenticated) {
+    return <Navigate to="/documents/login" replace />;
+  }
+  return <>{children}</>;
+};
 
 //---------------------- DocumentsPage (Supabase, public, read-only) ----------------------//
 const MONTHS = [
@@ -463,6 +516,14 @@ const DocumentsPage = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState<string>("");
   const [viewDoc, setViewDoc] = useState<Entry | null>(null);
+
+    const navigate = useNavigate();
+
+  // Add logout handler for public docs
+  const handleLogout = () => {
+    localStorage.removeItem('isPublicDocsAuthenticated');
+    navigate("/documents/login");
+  };
 
   const currentPrefix = folderStack.length ? folderStack[folderStack.length - 1] : "";
 
@@ -595,7 +656,15 @@ const DocumentsPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4 overflow-y-auto overflow-x-hidden w-full">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4 overflow-y-auto overflow-x-hidden w-full relative">
+      {/* LOGOUT BUTTON */}
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded z-10"
+      >
+        Logout
+      </button>
+
       <div className="max-w-3xl w-full mx-auto">
         <Link to="/" className="inline-flex items-center text-blue-600 mb-4 hover:underline">
           <Home className="mr-1 h-5 w-5" /> Back to Home
@@ -1498,7 +1567,15 @@ const App = () => (
   <Router>
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/documents" element={<DocumentsPage />} />
+      <Route path="/documents/login" element={<PublicDocsLogin />} />
+      <Route
+        path="/documents"
+        element={
+          <PublicProtectedRoute>
+            <DocumentsPage />
+          </PublicProtectedRoute>
+        }
+      />
       <Route path="/contact" element={<ContactUsPage />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
