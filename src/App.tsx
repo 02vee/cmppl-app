@@ -68,6 +68,15 @@ function getBaseName(filename: string) {
   return filename.replace(/\.[^/.]+$/, "");
 }
 
+// File/folder existence check helper
+async function fileOrFolderExists(path: string): Promise<boolean> {
+  const parent = path.includes("/") ? path.substring(0, path.lastIndexOf("/")) : "";
+  const name = path.split("/").pop();
+  const { data, error } = await supabase.storage.from(BUCKET).list(parent, { limit: 1000 });
+  if (error || !data) return false;
+  return data.some(item => item.name === name);
+}
+
 //---------------------- Supabase Folder/File Tree Helpers ----------------------//
 async function listTree(prefix = ""): Promise<TreeNode[]> {
   let out: TreeNode[] = [];
@@ -917,7 +926,7 @@ const AdminDocumentsPage = () => {
     }
   }, [showModal, folderStack]);
 
-  // Bulk delete/copy/cut/paste handlers
+  // Bulk delete/copy/cut/paste handlers (unchanged)
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
     if (!window.confirm(`Delete ${selected.size} items?`)) return;
@@ -939,7 +948,6 @@ const AdminDocumentsPage = () => {
     setClipboard({ type: "cut", nodes });
   };
 
-  // Keyboard shortcuts
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (showModal) return;
     if ((e.ctrlKey || e.metaKey) && selected.size > 0) {
@@ -1315,6 +1323,7 @@ const AdminDocumentsPage = () => {
     );
   };
 
+  // Modal add/rename logic with replace/skip popup
   const handleAdd = (type: "file" | "folder") => {
     setShowModal(type);
     setModalInput("");
@@ -1329,6 +1338,15 @@ const AdminDocumentsPage = () => {
     setUploading(true);
     if (showModal === "folder" && modalInput.trim()) {
       const folderPath = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(modalInput);
+      if (await fileOrFolderExists(folderPath)) {
+        if (!window.confirm(`Folder "${modalInput}" already exists. Do you want to replace it?`)) {
+          setUploading(false);
+          setShowModal(null);
+          setModalInput("");
+          return;
+        }
+        await deleteFileOrFolder(folderPath, true);
+      }
       await uploadFile(folderPath + "/.keep", new Blob([""], { type: "text/plain" }) as any as File);
       setShowModal(null);
       setModalInput("");
@@ -1337,6 +1355,12 @@ const AdminDocumentsPage = () => {
     if (showModal === "file" && modalFile) {
       for (const file of Array.from(modalFile)) {
         const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + sanitizeName(file.name);
+        if (await fileOrFolderExists(path)) {
+          if (!window.confirm(`File "${file.name}" already exists. Do you want to replace it?`)) {
+            continue;
+          }
+          await deleteFileOrFolder(path, false);
+        }
         await uploadFile(path, file);
       }
       setShowModal(null);
@@ -1367,7 +1391,17 @@ const AdminDocumentsPage = () => {
   const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     setUploading(true);
-    await uploadFilesWithFolders(getCurrentPrefix(), e.target.files);
+    for (const file of Array.from(e.target.files)) {
+      const relPath = (file as any).webkitRelativePath || file.name;
+      const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + relPath;
+      if (await fileOrFolderExists(path)) {
+        if (!window.confirm(`File "${relPath}" already exists. Do you want to replace it?`)) {
+          continue;
+        }
+        await deleteFileOrFolder(path, false);
+      }
+      await uploadFile(path, file);
+    }
     setUploading(false);
     await refresh();
   };
@@ -1416,7 +1450,17 @@ const AdminDocumentsPage = () => {
     }
 
     if (allFiles.length > 0) {
-      await uploadFilesWithFolders(getCurrentPrefix(), allFiles);
+      for (const file of allFiles) {
+        const relPath = (file as any).webkitRelativePath || file.name;
+        const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + relPath;
+        if (await fileOrFolderExists(path)) {
+          if (!window.confirm(`File "${relPath}" already exists. Do you want to replace it?`)) {
+            continue;
+          }
+          await deleteFileOrFolder(path, false);
+        }
+        await uploadFile(path, file);
+      }
     }
 
     setUploading(false);
