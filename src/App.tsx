@@ -68,7 +68,9 @@ function getBaseName(filename: string) {
   return filename.replace(/\.[^/.]+$/, "");
 }
 
-// File/folder existence check helper
+//---------------------- Supabase Folder/File Tree Helpers ----------------------//
+
+// Helper to check if a file or folder exists
 async function fileOrFolderExists(path: string): Promise<boolean> {
   const parent = path.includes("/") ? path.substring(0, path.lastIndexOf("/")) : "";
   const name = path.split("/").pop();
@@ -77,13 +79,11 @@ async function fileOrFolderExists(path: string): Promise<boolean> {
   return data.some(item => item.name === name);
 }
 
-//---------------------- Supabase Folder/File Tree Helpers ----------------------//
 async function listTree(prefix = ""): Promise<TreeNode[]> {
   let out: TreeNode[] = [];
   const { data, error } = await supabase.storage.from(BUCKET).list(prefix, { limit: 1000 });
   if (error) {
     console.error("Supabase error:", error);
-
     return out;
   }
   const folderPromises: Promise<TreeNode[]>[] = [];
@@ -190,13 +190,22 @@ function buildTree(files: TreeNode[]): TreeNode[] {
 async function uploadFile(path: string, file: File) {
   await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
 }
+
+// UPDATED: Prompt for overwrite if file exists
 async function uploadFilesWithFolders(prefix: string, files: FileList | File[]) {
   for (const file of Array.from(files)) {
     let fullPath = (file as any).webkitRelativePath || file.name;
     if (prefix) fullPath = prefix + "/" + fullPath;
+    if (await fileOrFolderExists(fullPath)) {
+      if (!window.confirm(`File "${fullPath}" already exists. Do you want to replace it?`)) {
+        continue;
+      }
+      await supabase.storage.from(BUCKET).remove([fullPath]);
+    }
     await uploadFile(fullPath, file);
   }
 }
+
 async function deleteFileOrFolder(path: string, isFolder: boolean) {
   if (!isFolder) {
     const { error } = await supabase.storage.from(BUCKET).remove([path]);
@@ -233,6 +242,7 @@ async function deleteFileOrFolder(path: string, isFolder: boolean) {
     console.error("Delete error:", delError, "Files:", filesToDelete);
   }
 }
+
 async function moveFileOrFolder(oldPath: string, newPath: string, isFolder = false) {
   if (oldPath === newPath) return;
   if (!isFolder) {
@@ -926,7 +936,6 @@ const AdminDocumentsPage = () => {
     }
   }, [showModal, folderStack]);
 
-  // Bulk delete/copy/cut/paste handlers (unchanged)
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
     if (!window.confirm(`Delete ${selected.size} items?`)) return;
@@ -1323,7 +1332,6 @@ const AdminDocumentsPage = () => {
     );
   };
 
-  // Modal add/rename logic with replace/skip popup
   const handleAdd = (type: "file" | "folder") => {
     setShowModal(type);
     setModalInput("");
@@ -1370,6 +1378,7 @@ const AdminDocumentsPage = () => {
     }
     setUploading(false);
   };
+
   const doRename = async () => {
     if (!modalTarget) return;
     const newName = modalInput.trim();
@@ -1391,22 +1400,11 @@ const AdminDocumentsPage = () => {
   const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     setUploading(true);
-    for (const file of Array.from(e.target.files)) {
-      const relPath = (file as any).webkitRelativePath || file.name;
-      const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + relPath;
-      if (await fileOrFolderExists(path)) {
-        if (!window.confirm(`File "${relPath}" already exists. Do you want to replace it?`)) {
-          continue;
-        }
-        await deleteFileOrFolder(path, false);
-      }
-      await uploadFile(path, file);
-    }
+    await uploadFilesWithFolders(getCurrentPrefix(), e.target.files);
     setUploading(false);
     await refresh();
   };
 
-  // --- DRAG & DROP SUPPORT: Drop anywhere on the page ---
   const handleGlobalDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1414,7 +1412,6 @@ const AdminDocumentsPage = () => {
 
     let allFiles: File[] = [];
 
-    // Helper to recursively traverse directories
     const traverseFileTree = async (item: any, path = ""): Promise<File[]> => {
       return new Promise<File[]>((resolve) => {
         if (item.isFile) {
@@ -1450,17 +1447,7 @@ const AdminDocumentsPage = () => {
     }
 
     if (allFiles.length > 0) {
-      for (const file of allFiles) {
-        const relPath = (file as any).webkitRelativePath || file.name;
-        const path = (getCurrentPrefix() ? getCurrentPrefix() + "/" : "") + relPath;
-        if (await fileOrFolderExists(path)) {
-          if (!window.confirm(`File "${relPath}" already exists. Do you want to replace it?`)) {
-            continue;
-          }
-          await deleteFileOrFolder(path, false);
-        }
-        await uploadFile(path, file);
-      }
+      await uploadFilesWithFolders(getCurrentPrefix(), allFiles);
     }
 
     setUploading(false);
