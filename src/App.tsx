@@ -410,6 +410,129 @@ const ContactUsPage = () => (
   </div>
 );
 
+//---------------------- Track Page ----------------------//
+const TrackPage = () => {
+  const [region, setRegion] = useState<null | "South" | "West" | "East" | "North">(null);
+
+  const handleRegionClick = (reg: "South" | "West" | "East" | "North") => {
+    setRegion(reg);
+  };
+
+  const handleBack = () => setRegion(null);
+
+  return (
+    <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200">
+      <div className="relative z-10 w-full flex flex-col items-center justify-center pt-6 pb-2">
+        <h2 className="text-2xl md:text-3xl font-extrabold text-blue-700 mb-5 drop-shadow text-center">
+          Track
+        </h2>
+        <div className="relative w-full max-w-md sm:max-w-lg mx-auto">
+          <div className="bg-white/95 rounded-xl shadow-xl p-3 sm:p-4 border border-blue-100 w-full text-center">
+            {/* Main region selection */}
+            {!region && (
+              <div className="flex flex-wrap gap-4 justify-center">
+                <button
+                  onClick={() => handleRegionClick("East")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg shadow transition"
+                >
+                  East
+                </button>
+                <button
+                  onClick={() => handleRegionClick("West")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg shadow transition"
+                >
+                  West
+                </button>
+                <button
+                  onClick={() => handleRegionClick("North")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg shadow transition"
+                >
+                  North
+                </button>
+                <button
+                  onClick={() => handleRegionClick("South")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg shadow transition"
+                >
+                  South
+                </button>
+              </div>
+            )}
+
+            {/* South Sub-regions */}
+            {region === "South" && (
+              <div>
+                <button
+                  onClick={handleBack}
+                  className="text-blue-600 hover:underline mb-4 block text-left"
+                >
+                  &larr; Back
+                </button>
+                <div className="flex flex-wrap gap-4 justify-center">
+                  <a
+                    href="https://industry.roado.tech/trips/ongoing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg shadow transition inline-block"
+                  >
+                    Hyderabad
+                  </a>
+                  <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg shadow transition">
+                    Bangalore
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* West Sub-regions */}
+            {region === "West" && (
+              <div>
+                <button
+                  onClick={handleBack}
+                  className="text-blue-600 hover:underline mb-4 block text-left"
+                >
+                  &larr; Back
+                </button>
+                <div className="flex flex-wrap gap-4 justify-center">
+                  <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg shadow transition">
+                    Gujarat
+                  </button>
+                  <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg shadow transition">
+                    Maharastra
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* North/East with no sub-regions */}
+            {region === "North" && (
+              <div>
+                <button
+                  onClick={handleBack}
+                  className="text-blue-600 hover:underline mb-4 block text-left"
+                >
+                  &larr; Back
+                </button>
+                <p className="text-gray-500">No options available for North yet.</p>
+              </div>
+            )}
+            {region === "East" && (
+              <div>
+                <button
+                  onClick={handleBack}
+                  className="text-blue-600 hover:underline mb-4 block text-left"
+                >
+                  &larr; Back
+                </button>
+                <p className="text-gray-500">No options available for East yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 //---------------------- Public Docs Login Page ----------------------//
 const PublicDocsLogin = () => {
   const [username, setUsername] = useState('');
@@ -1605,6 +1728,7 @@ const App = () => (
           </PublicProtectedRoute>
         }
       />
+       <Route path="/track" element={<TrackPage />} /> 
       <Route path="/contact" element={<ContactUsPage />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
