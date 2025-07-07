@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import {
   File as FileIcon, Folder as FolderIcon, Upload, Download, Edit, Trash2, Home, ChevronRight,
- Lock, Plus, X, ArrowLeft, ArrowRight, Menu, Mail, Map as MapIcon
+ Lock, Plus, X, ArrowLeft, ArrowRight, Menu, Mail, Map as MapIcon, MapPin
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -421,121 +421,152 @@ const ContactUsPage = () => (
 const TrackPage = () => {
   const [region, setRegion] = useState<null | "South" | "West" | "East" | "North">(null);
 
-  const handleRegionClick = (reg: "South" | "West" | "East" | "North") => {
-    setRegion(reg);
-  };
-
+  const handleRegionClick = (reg: "South" | "West" | "East" | "North") => setRegion(reg);
   const handleBack = () => setRegion(null);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200">
-      <div className="relative z-10 w-full flex flex-col items-center justify-center pt-6 pb-2">
-        <h2 className="text-2xl md:text-3xl font-extrabold text-blue-700 mb-5 drop-shadow text-center">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200 overflow-auto">
+      {/* Decorative SVG Top */}
+      <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{ height: "90px", minHeight: "40px" }}>
+        <svg viewBox="0 0 1440 320" className="w-full h-full">
+          <path fill="#3b82f6" fillOpacity="0.15" d="M0,160L80,138.7C160,117,320,75,480,85.3C640,96,800,160,960,186.7C1120,213,1280,203,1360,197.3L1440,192L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z"></path>
+        </svg>
+      </div>
+
+      <div className="relative z-10 w-full flex flex-col items-center justify-center pt-8 pb-4">
+        {/* Animated Icon */}
+        <div className="mb-2 animate-bounce-slow">
+          <MapPin className="h-12 w-12 text-blue-500 drop-shadow" />
+        </div>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-blue-700 mb-1 drop-shadow text-center">
           Track
         </h2>
-        <div className="relative w-full max-w-md sm:max-w-lg mx-auto">
-          <div className="bg-white/95 rounded-xl shadow-xl p-3 sm:p-4 border border-blue-100 w-full text-center">
-            {/* Main region selection */}
-            {!region && (
-              <div className="flex flex-wrap gap-4 justify-center">
+        <div className="mb-6 text-blue-800 text-opacity-80 text-lg font-medium text-center">
+          Select a region to track your destination
+        </div>
+        <div className="relative w-full max-w-lg mx-auto flex flex-col items-center">
+          {/* Main region selection */}
+          {!region && (
+            <div className="grid grid-cols-2 gap-6 w-full">
+              {["East", "West", "North", "South"].map((regionName) => (
                 <button
-                  onClick={() => handleRegionClick("East")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg shadow transition"
+                  key={regionName}
+                  onClick={() => handleRegionClick(regionName as any)}
+                  className="bg-gradient-to-br from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-500 text-white font-bold py-6 px-0 rounded-2xl shadow-xl transition transform hover:-translate-y-1 focus:ring-4 focus:ring-blue-200 outline-none text-xl tracking-wide"
+                  style={{ minWidth: 120 }}
                 >
-                  East
+                  {regionName}
                 </button>
-                <button
-                  onClick={() => handleRegionClick("West")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg shadow transition"
-                >
-                  West
-                </button>
-                <button
-                  onClick={() => handleRegionClick("North")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg shadow transition"
-                >
-                  North
-                </button>
-                <button
-                  onClick={() => handleRegionClick("South")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg shadow transition"
-                >
-                  South
-                </button>
-              </div>
-            )}
+              ))}
+            </div>
+          )}
 
-            {/* South Sub-regions */}
-            {region === "South" && (
-              <div>
-                <button
-                  onClick={handleBack}
-                  className="text-blue-600 hover:underline mb-4 block text-left"
-                >
-                  &larr; Back
-                </button>
-                <div className="flex flex-wrap gap-4 justify-center">
+          {/* South Sub-regions */}
+          {region === "South" && (
+            <div className="animate-fadein flex flex-col items-center w-full mt-3">
+              <button
+                onClick={handleBack}
+                className="text-blue-600 hover:underline mb-4 block text-left self-start"
+              >
+                &larr; Back
+              </button>
+              <div className="bg-white/95 border-l-8 border-blue-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
+                <div className="mb-4 text-xl font-semibold text-blue-700">South Region</div>
+                <div className="flex flex-wrap gap-6 justify-center">
                   <a
                     href="https://industry.roado.tech/trips/ongoing"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg shadow transition inline-block"
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
                   >
                     Hyderabad
                   </a>
-                  <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg shadow transition">
+                  <button className="bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">
                     Bangalore
                   </button>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* West Sub-regions */}
-            {region === "West" && (
-              <div>
-                <button
-                  onClick={handleBack}
-                  className="text-blue-600 hover:underline mb-4 block text-left"
-                >
-                  &larr; Back
-                </button>
-                <div className="flex flex-wrap gap-4 justify-center">
-                  <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg shadow transition">
+          {/* West Sub-regions */}
+          {region === "West" && (
+            <div className="animate-fadein flex flex-col items-center w-full mt-3">
+              <button
+                onClick={handleBack}
+                className="text-blue-600 hover:underline mb-4 block text-left self-start"
+              >
+                &larr; Back
+              </button>
+              <div className="bg-white/95 border-l-8 border-yellow-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
+                <div className="mb-4 text-xl font-semibold text-yellow-600">West Region</div>
+                <div className="flex flex-wrap gap-6 justify-center">
+                  <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">
                     Gujarat
                   </button>
-                  <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg shadow transition">
+                  <button className="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">
                     Maharastra
                   </button>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* North/East with no sub-regions */}
-            {region === "North" && (
-              <div>
-                <button
-                  onClick={handleBack}
-                  className="text-blue-600 hover:underline mb-4 block text-left"
-                >
-                  &larr; Back
-                </button>
+          {/* North/East with no sub-regions */}
+          {region === "North" && (
+            <div className="animate-fadein flex flex-col items-center w-full mt-3">
+              <button
+                onClick={handleBack}
+                className="text-blue-600 hover:underline mb-4 block text-left self-start"
+              >
+                &larr; Back
+              </button>
+              <div className="bg-white/95 border-l-8 border-gray-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
+                <div className="mb-4 text-xl font-semibold text-gray-600">North Region</div>
                 <p className="text-gray-500">No options available for North yet.</p>
               </div>
-            )}
-            {region === "East" && (
-              <div>
-                <button
-                  onClick={handleBack}
-                  className="text-blue-600 hover:underline mb-4 block text-left"
-                >
-                  &larr; Back
-                </button>
+            </div>
+          )}
+          {region === "East" && (
+            <div className="animate-fadein flex flex-col items-center w-full mt-3">
+              <button
+                onClick={handleBack}
+                className="text-blue-600 hover:underline mb-4 block text-left self-start"
+              >
+                &larr; Back
+              </button>
+              <div className="bg-white/95 border-l-8 border-gray-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
+                <div className="mb-4 text-xl font-semibold text-gray-600">East Region</div>
                 <p className="text-gray-500">No options available for East yet.</p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Decorative SVG Bottom */}
+      <div className="absolute bottom-0 left-0 w-full pointer-events-none z-0" style={{ height: "60px", minHeight: "25px" }}>
+        <svg viewBox="0 0 1440 320" className="w-full h-full">
+          <path fill="#3b82f6" fillOpacity="0.13" d="M0,288L80,272C160,256,320,224,480,224C640,224,800,256,960,256C1120,256,1280,224,1360,208L1440,192L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"></path>
+        </svg>
+      </div>
+      {/* Custom animations */}
+      <style>
+        {`
+          .animate-fadein {
+            animation: fadein 0.4s;
+          }
+          @keyframes fadein {
+            from { opacity: 0; transform: translateY(30px);}
+            to { opacity: 1; transform: translateY(0);}
+          }
+          .animate-bounce-slow { animation: bounce 2.5s infinite; }
+          @keyframes bounce {
+            0%, 100% { transform: translateY(0);}
+            50% { transform: translateY(-17px);}
+          }
+        `}
+      </style>
     </div>
   );
 };
