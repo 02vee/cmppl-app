@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import {
   File as FileIcon, Folder as FolderIcon, Upload, Download, Edit, Trash2, Home, ChevronRight,
- Lock, Plus, X, ArrowLeft, ArrowRight, Menu, Mail
+ Lock, Plus, X, ArrowLeft, ArrowRight, Menu, Mail, Map as MapIcon
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -298,6 +298,10 @@ const ResponsiveNavbar = () => {
         </button>
         <div className="hidden md:flex space-x-4">
           <Link to="/documents" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
+           <Link to="/track" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition">
+            <MapIcon className="mr-2 h-5 w-5" />
+            Track
+          </Link>
           <Link to="/contact" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><Mail className="mr-2 h-5 w-5" />Contact Us</Link>
           <Link to="/admin/login" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition"><Lock className="mr-2 h-5 w-5" />Admin</Link>
         </div>
@@ -305,6 +309,9 @@ const ResponsiveNavbar = () => {
       {open && (
         <div className="flex flex-col px-4 pb-4 space-y-1 md:hidden">
           <Link to="/documents" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><FileIcon className="mr-2 h-5 w-5" />Documents</Link>
+          <Link to="/track" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}>
+            <MapIcon className="mr-2 h-5 w-5" />Track
+          </Link>
           <Link to="/contact" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><Mail className="mr-2 h-5 w-5" />Contact Us</Link>
           <Link to="/admin/login" className="flex items-center px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 transition" onClick={() => setOpen(false)}><Lock className="mr-2 h-5 w-5" />Admin</Link>
         </div>
