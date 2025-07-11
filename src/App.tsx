@@ -431,13 +431,16 @@ const TrackPage = () => {
       const data = await res.json();
       console.log("Fetched from API:", data); // ✅ Debug log
 
-      const links = data.map((item: { link: string }) => item.link).filter(Boolean);
-      setBangaloreLinks(links);
-    } catch (error) {
-      console.error("Error fetching links:", error);
-      setBangaloreLinks([]);
-    }
-  };
+       const links = Array.isArray(data)
+      ? data.map((item: { link: string }) => item.link)
+      : [data.link]; // single object fallback
+
+    setBangaloreLinks(links.filter(Boolean));
+  } catch (error) {
+    console.error("Error fetching links:", error);
+    setBangaloreLinks([]);
+  }
+};
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200 overflow-auto">
