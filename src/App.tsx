@@ -372,62 +372,69 @@ const ADDRESSES = [
     ]
   }
 ];
-const navigate = useNavigate();
 
-const ContactUsPage = () => (
-  <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200">
-    {/* Decorative SVG Wave */}
-    <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{ height: '100px', minHeight: '60px' }}>
-      <svg viewBox="0 0 1440 320" className="w-full h-full">
-        <path fill="#3b82f6" fillOpacity="0.23" d="M0,256L60,245.3C120,235,240,213,360,213.3C480,213,600,235,720,229.3C840,224,960,192,1080,186.7C1200,181,1320,203,1380,213.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
-      </svg>
-    </div>
-    <div className="relative z-10 w-full flex flex-col items-center justify-center pt-6 pb-2">
+const ContactUsPage = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200">
+      {/* Decorative SVG Wave */}
+      <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{ height: '100px', minHeight: '60px' }}>
+        <svg viewBox="0 0 1440 320" className="w-full h-full">
+          <path fill="#3b82f6" fillOpacity="0.23" d="M0,256L60,245.3C120,235,240,213,360,213.3C480,213,600,235,720,229.3C840,224,960,192,1080,186.7C1200,181,1320,203,1380,213.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
+        </svg>
+      </div>
+
+      {/* Back Button */}
       <button
-  onClick={() => navigate("/")}
-  className="absolute top-4 left-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow"
->
-  ← Back
-</button>
-      <h2 className="text-2xl md:text-3xl font-extrabold text-blue-700 mb-5 drop-shadow text-center">Contact Us</h2>
-      <div className="relative w-full max-w-md sm:max-w-lg mx-auto">
-        <div className="absolute left-4 top-0 h-full w-0.5 bg-blue-200 rounded"></div>
-        <div className="flex flex-col gap-6">
-          {ADDRESSES.map((addr, idx) => (
-            <div key={addr.label} className="relative flex items-start gap-3">
-              {/* Timeline Dot */}
-              <div className="flex flex-col items-center">
-                <div className="w-5 h-5 rounded-full bg-blue-100 border-2 border-blue-300 flex items-center justify-center shadow" />
-                {idx < ADDRESSES.length - 1 && (
-                  <div className="flex-1 w-0.5 bg-blue-200 my-1" style={{ minHeight: 16 }}></div>
-                )}
+        onClick={() => navigate("/")}
+        className="absolute top-5 left-5 text-blue-700 underline z-10"
+      >
+        ← Back to Home
+      </button>
+
+      <div className="relative z-10 w-full flex flex-col items-center justify-center pt-6 pb-2">
+        <h2 className="text-2xl md:text-3xl font-extrabold text-blue-700 mb-5 drop-shadow text-center">Contact Us</h2>
+
+        <div className="relative w-full max-w-md sm:max-w-lg mx-auto">
+          <div className="absolute left-4 top-0 h-full w-0.5 bg-blue-200 rounded"></div>
+          <div className="flex flex-col gap-6">
+            {ADDRESSES.map((addr, idx) => (
+              <div key={addr.label} className="relative flex items-start gap-3">
+                <div className="flex flex-col items-center">
+                  <div className="w-5 h-5 rounded-full bg-blue-100 border-2 border-blue-300 flex items-center justify-center shadow" />
+                  {idx < ADDRESSES.length - 1 && (
+                    <div className="flex-1 w-0.5 bg-blue-200 my-1" style={{ minHeight: 16 }}></div>
+                  )}
+                </div>
+                <div className="bg-white/95 rounded-xl shadow-xl p-3 sm:p-4 border border-blue-100 w-full">
+                  <h3 className="text-base sm:text-lg font-bold text-blue-700 mb-1">{addr.label}</h3>
+                  <ul className="text-gray-600 text-xs sm:text-sm space-y-0.5">
+                    {addr.lines.map((line, i) => (
+                      <li key={i}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <div className="bg-white/95 rounded-xl shadow-xl p-3 sm:p-4 border border-blue-100 w-full">
-                <h3 className="text-base sm:text-lg font-bold text-blue-700 mb-1">{addr.label}</h3>
-                <ul className="text-gray-600 text-xs sm:text-sm space-y-0.5">
-                  {addr.lines.map((line, i) => (
-                    <li key={i}>{line}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-    </div>
-    {/* Decorative SVG at the bottom */}
-    <div className="absolute bottom-0 left-0 w-full pointer-events-none z-0" style={{ height: '55px', minHeight: '40px' }}>
-      <svg viewBox="0 0 1440 320" className="w-full h-full">
-        <path fill="#3b82f6" fillOpacity="0.17" d="M0,32L120,37.3C240,43,480,53,720,53.3C960,53,1200,43,1320,37.3L1440,32L1440,320L1320,320C1200,320,960,320,720,320C480,320,240,320,120,320L0,320Z"></path>
-      </svg>
-    </div>
-  </div>
-);
 
+      {/* Decorative Bottom SVG */}
+      <div className="absolute bottom-0 left-0 w-full pointer-events-none z-0" style={{ height: '55px', minHeight: '40px' }}>
+        <svg viewBox="0 0 1440 320" className="w-full h-full">
+          <path fill="#3b82f6" fillOpacity="0.17" d="M0,32L120,37.3C240,43,480,53,720,53.3C960,53,1200,43,1320,37.3L1440,32L1440,320L1320,320C1200,320,960,320,720,320C480,320,240,320,120,320L0,320Z"></path>
+        </svg>
+      </div>
+    </div>
+  );
+};
 //---------------------- Track Page ----------------------//
 const TrackPage = () => {
   const [region, setRegion] = useState<null | "South" | "West" | "East" | "North" | "Bangalore">(null);
   const [bangaloreLinks, setBangaloreLinks] = useState<string[]>([]);
+   const navigate = useNavigate();
 
   const handleRegionClick = (reg: "South" | "West" | "East" | "North") => setRegion(reg);
   const handleBack = () => setRegion(null);
@@ -474,14 +481,12 @@ const TrackPage = () => {
       </div>
 
       <div className="relative z-10 w-full flex flex-col items-center justify-center pt-8 pb-4">
-        const navigate = useNavigate();
-        <button
-  onClick={() => navigate("/")}
-  className="absolute top-4 left-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow"
->
-  ← Back
-</button>
-
+         <button
+    onClick={() => navigate("/")}
+    className="absolute top-5 left-5 text-blue-700 underline z-10"
+  >
+    ← Back to Home
+  </button>
         <div className="mb-2 animate-bounce-slow">
           <MapPin className="h-12 w-12 text-blue-500 drop-shadow" />
         </div>
