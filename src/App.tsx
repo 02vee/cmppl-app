@@ -374,16 +374,9 @@ const ADDRESSES = [
 ];
 
 const ContactUsPage = () => {
-  const navigate = useNavigate();
 
-  return (
+  return ( 
     <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200">
-      <button
-    onClick={() => navigate("/")}
-    className="absolute top-5 left-5 text-blue-700 underline z-10"
-  >
-    ← Back to Home
-  </button>
       {/* Decorative SVG Wave */}
       <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{ height: '100px', minHeight: '60px' }}>
         <svg viewBox="0 0 1440 320" className="w-full h-full">
