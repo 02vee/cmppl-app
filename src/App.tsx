@@ -374,20 +374,22 @@ const ADDRESSES = [
 ];
 
 const ContactUsPage = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200">
+      <button
+    onClick={() => navigate("/")}
+    className="absolute top-5 left-5 text-blue-700 underline z-10"
+  >
+    ← Back to Home
+  </button>
       {/* Decorative SVG Wave */}
       <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{ height: '100px', minHeight: '60px' }}>
         <svg viewBox="0 0 1440 320" className="w-full h-full">
           <path fill="#3b82f6" fillOpacity="0.23" d="M0,256L60,245.3C120,235,240,213,360,213.3C480,213,600,235,720,229.3C840,224,960,192,1080,186.7C1200,181,1320,203,1380,213.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
         </svg>
       </div>
-      <Link
-  to="/"
-  className="absolute top-5 left-5 text-blue-700 underline z-10"
->
-  ← Back to Home
-</Link>
       <div className="relative z-10 w-full flex flex-col items-center justify-center pt-6 pb-2">
         <h2 className="text-2xl md:text-3xl font-extrabold text-blue-700 mb-5 drop-shadow text-center">Contact Us</h2>
 
