@@ -372,6 +372,7 @@ const ADDRESSES = [
     ]
   }
 ];
+const navigate = useNavigate();
 
 const ContactUsPage = () => (
   <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200">
@@ -382,6 +383,12 @@ const ContactUsPage = () => (
       </svg>
     </div>
     <div className="relative z-10 w-full flex flex-col items-center justify-center pt-6 pb-2">
+      <button
+  onClick={() => navigate("/")}
+  className="absolute top-4 left-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow"
+>
+  ← Back
+</button>
       <h2 className="text-2xl md:text-3xl font-extrabold text-blue-700 mb-5 drop-shadow text-center">Contact Us</h2>
       <div className="relative w-full max-w-md sm:max-w-lg mx-auto">
         <div className="absolute left-4 top-0 h-full w-0.5 bg-blue-200 rounded"></div>
@@ -467,6 +474,14 @@ const TrackPage = () => {
       </div>
 
       <div className="relative z-10 w-full flex flex-col items-center justify-center pt-8 pb-4">
+        const navigate = useNavigate();
+        <button
+  onClick={() => navigate("/")}
+  className="absolute top-4 left-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow"
+>
+  ← Back
+</button>
+
         <div className="mb-2 animate-bounce-slow">
           <MapPin className="h-12 w-12 text-blue-500 drop-shadow" />
         </div>
