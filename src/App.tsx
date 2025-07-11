@@ -374,8 +374,6 @@ const ADDRESSES = [
 ];
 
 const ContactUsPage = () => {
-  const navigate = useNavigate();
-
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200">
       {/* Decorative SVG Wave */}
