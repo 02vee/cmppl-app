@@ -420,30 +420,30 @@ const ContactUsPage = () => (
 //---------------------- Track Page ----------------------//
 const TrackPage = () => {
   const [region, setRegion] = useState<null | "South" | "West" | "East" | "North">(null);
-  const [bangaloreLink, setBangaloreLink] = useState<string | null>(null);
-  const [loadingBLR, setLoadingBLR] = useState(true);
+  const [bangaloreLinks, setBangaloreLinks] = useState<{ timestamp: string, link: string }[]>([]);
 
   const handleRegionClick = (reg: "South" | "West" | "East" | "North") => setRegion(reg);
-  const handleBack = () => setRegion(null);
+  const handleBack = () => {
+    setRegion(null);
+    setBangaloreLinks([]);
+  };
 
-  useEffect(() => {
-    if (region === "South") {
-      fetch("https://script.google.com/macros/s/AKfycbzAfTnTP312EqwsERgmQegWvHSzj_Knus9oJmeLaV-Eu4hwtv-7oaVn_JBpbzofpmj9/exec") // Replace with your deployed Apps Script link
-        .then((res) => res.json())
-        .then((data) => {
-          setBangaloreLink(data?.link ?? null);
-        })
-        .catch((err) => {
-          console.error("Failed to load Bangalore tracking link", err);
-          setBangaloreLink(null);
-        })
-        .finally(() => setLoadingBLR(false));
+  const fetchBangaloreLinks = async () => {
+    try {
+      const response = await fetch("https://script.google.com/macros/s/AKfycbzAfTnTP312EqwsERgmQegWvHSzj_Knus9oJmeLaV-Eu4hwtv-7oaVn_JBpbzofpmj9/exec");
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setBangaloreLinks(data);
+      } else if (data.link) {
+        setBangaloreLinks([data]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch Bangalore links", error);
     }
-  }, [region]);
+  };
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200 overflow-auto">
-      {/* Decorative SVG Top */}
       <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{ height: "90px", minHeight: "40px" }}>
         <svg viewBox="0 0 1440 320" className="w-full h-full">
           <path fill="#3b82f6" fillOpacity="0.15" d="M0,160L80,138.7C160,117,320,75,480,85.3C640,96,800,160,960,186.7C1120,213,1280,203,1360,197.3L1440,192L1440,0L0,0Z"></path>
@@ -451,16 +451,13 @@ const TrackPage = () => {
       </div>
 
       <div className="relative z-10 w-full flex flex-col items-center justify-center pt-8 pb-4">
-        {/* Animated Icon */}
         <div className="mb-2 animate-bounce-slow">
           <MapPin className="h-12 w-12 text-blue-500 drop-shadow" />
         </div>
         <h2 className="text-3xl md:text-4xl font-extrabold text-blue-700 mb-1 drop-shadow text-center">Track</h2>
-        <div className="mb-6 text-blue-800 text-opacity-80 text-lg font-medium text-center">
-          Select a region to track your destination
-        </div>
+        <div className="mb-6 text-blue-800 text-opacity-80 text-lg font-medium text-center">Select a region to track your destination</div>
+
         <div className="relative w-full max-w-lg mx-auto flex flex-col items-center">
-          {/* Region selection */}
           {!region && (
             <div className="grid grid-cols-2 gap-6 w-full">
               {["East", "West", "North", "South"].map((regionName) => (
@@ -476,79 +473,58 @@ const TrackPage = () => {
             </div>
           )}
 
-          {/* South Region */}
           {region === "South" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
-              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">
-                &larr; Back
-              </button>
+              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
               <div className="bg-white/95 border-l-8 border-blue-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-blue-700">South Region</div>
                 <div className="flex flex-wrap gap-6 justify-center">
-                  <a
-                    href="https://industry.roado.tech/trips/ongoing"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
-                  >
-                    Hyderabad
-                  </a>
-
-                  {/* Bangalore Tracker */}
-                  {loadingBLR ? (
-                    <button className="bg-green-300 text-white font-bold py-4 px-8 rounded-xl shadow text-lg" disabled>
-                      Loading...
-                    </button>
-                  ) : bangaloreLink ? (
-                    <a
-                      href={bangaloreLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
-                    >
-                      Bangalore
-                    </a>
-                  ) : (
-                    <button className="bg-gray-400 text-white font-bold py-4 px-8 rounded-xl shadow text-lg" disabled>
-                      No Link
-                    </button>
-                  )}
+                  <a href="https://industry.roado.tech/trips/ongoing" target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Hyderabad</a>
+                  <button onClick={fetchBangaloreLinks} className="bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Bangalore</button>
                 </div>
+
+                {bangaloreLinks.length > 0 && (
+                  <div className="mt-6 w-full max-w-md">
+                    <h3 className="text-lg font-bold text-blue-700 mb-2">Available Bangalore Trips:</h3>
+                    <ul className="space-y-2">
+                      {bangaloreLinks.map((item, index) => (
+                        <li key={index}>
+                          <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">{item.link}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* West Region */}
           {region === "West" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
-              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 self-start">&larr; Back</button>
+              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
               <div className="bg-white/95 border-l-8 border-yellow-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-yellow-600">West Region</div>
                 <div className="flex flex-wrap gap-6 justify-center">
-                  <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">
-                    Gujarat
-                  </button>
-                  <button className="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">
-                    Maharashtra
-                  </button>
+                  <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Gujarat</button>
+                  <button className="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Maharastra</button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* North and East Regions */}
           {region === "North" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
-              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 self-start">&larr; Back</button>
+              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
               <div className="bg-white/95 border-l-8 border-gray-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-gray-600">North Region</div>
                 <p className="text-gray-500">No options available for North yet.</p>
               </div>
             </div>
           )}
+
           {region === "East" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
-              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 self-start">&larr; Back</button>
+              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
               <div className="bg-white/95 border-l-8 border-gray-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-gray-600">East Region</div>
                 <p className="text-gray-500">No options available for East yet.</p>
@@ -558,32 +534,18 @@ const TrackPage = () => {
         </div>
       </div>
 
-      {/* Decorative SVG Bottom */}
       <div className="absolute bottom-0 left-0 w-full pointer-events-none z-0" style={{ height: "60px", minHeight: "25px" }}>
         <svg viewBox="0 0 1440 320" className="w-full h-full">
           <path fill="#3b82f6" fillOpacity="0.13" d="M0,288L80,272C160,256,320,224,480,224C640,224,800,256,960,256C1120,256,1280,224,1360,208L1440,192L1440,320L0,320Z"></path>
         </svg>
       </div>
 
-      {/* Custom animations */}
-      <style>
-        {`
-          .animate-fadein {
-            animation: fadein 0.4s;
-          }
-          @keyframes fadein {
-            from { opacity: 0; transform: translateY(30px);}
-            to { opacity: 1; transform: translateY(0);}
-          }
-          .animate-bounce-slow {
-            animation: bounce 2.5s infinite;
-          }
-          @keyframes bounce {
-            0%, 100% { transform: translateY(0);}
-            50% { transform: translateY(-17px);}
-          }
-        `}
-      </style>
+      <style>{`
+        .animate-fadein { animation: fadein 0.4s; }
+        @keyframes fadein { from { opacity: 0; transform: translateY(30px);} to { opacity: 1; transform: translateY(0);} }
+        .animate-bounce-slow { animation: bounce 2.5s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0);} 50% { transform: translateY(-17px);} }
+      `}</style>
     </div>
   );
 };
