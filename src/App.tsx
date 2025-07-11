@@ -429,25 +429,40 @@ const TrackPage = () => {
     try {
       const res = await fetch("https://script.google.com/macros/s/AKfycbzAfTnTP312EqwsERgmQegWvHSzj_Knus9oJmeLaV-Eu4hwtv-7oaVn_JBpbzofpmj9/exec");
       const data = await res.json();
-      console.log("Fetched from API:", data); // ✅ Debug log
+      console.log("Fetched from API:", data);
 
-       const links = Array.isArray(data)
-      ? data.map((item: { link: string }) => item.link)
-      : [data.link]; // single object fallback
+      const links = Array.isArray(data)
+        ? data.map((item: { link: string }) => item.link)
+        : [data.link]; // fallback
 
-    setBangaloreLinks(links.filter(Boolean));
-  } catch (error) {
-    console.error("Error fetching links:", error);
-    setBangaloreLinks([]);
-  }
-};
+      setBangaloreLinks(links.filter(Boolean));
+    } catch (error) {
+      console.error("Error fetching links:", error);
+      setBangaloreLinks([]);
+    }
+  };
+
+  // 🔄 Auto-fetch when region becomes Bangalore
+  useEffect(() => {
+    if (region === "Bangalore") {
+      fetchBangaloreLinks();
+    }
+  }, [region]);
+
+  // 🔁 Optional: Auto-refresh every 5 minutes
+  useEffect(() => {
+    if (region === "Bangalore") {
+      const interval = setInterval(fetchBangaloreLinks, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [region]);
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200 overflow-auto">
       {/* Decorative Top SVG */}
       <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{ height: "90px", minHeight: "40px" }}>
         <svg viewBox="0 0 1440 320" className="w-full h-full">
-          <path fill="#3b82f6" fillOpacity="0.15" d="M0,160L80,138.7C160,117,320,75,480,85.3C640,96,800,160,960,186.7C1120,213,1280,203,1360,197.3L1440,192L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z"></path>
+          <path fill="#3b82f6" fillOpacity="0.15" d="M0,160L80,138.7C160,117,320,75,480,85.3C640,96,800,160,960,186.7C1120,213,1280,203,1360,197.3L1440,192L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z" />
         </svg>
       </div>
 
@@ -461,6 +476,7 @@ const TrackPage = () => {
         </div>
 
         <div className="relative w-full max-w-lg mx-auto flex flex-col items-center">
+          {/* Region Buttons */}
           {!region && (
             <div className="grid grid-cols-2 gap-6 w-full">
               {["East", "West", "North", "South"].map((regionName) => (
@@ -476,7 +492,7 @@ const TrackPage = () => {
             </div>
           )}
 
-          {/* South Region with Bangalore Button */}
+          {/* South Region */}
           {region === "South" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
               <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
@@ -492,10 +508,7 @@ const TrackPage = () => {
                     Hyderabad
                   </a>
                   <button
-                    onClick={() => {
-                      fetchBangaloreLinks();
-                      setRegion("Bangalore");
-                    }}
+                    onClick={() => setRegion("Bangalore")}
                     className="bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
                   >
                     Bangalore
@@ -505,7 +518,7 @@ const TrackPage = () => {
             </div>
           )}
 
-          {/* Bangalore Region Link Display */}
+          {/* Bangalore Region Links */}
           {region === "Bangalore" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
               <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
@@ -523,7 +536,7 @@ const TrackPage = () => {
                         rel="noopener noreferrer"
                         className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow transition"
                       >
-                        View Link {i + 1}
+                        Link {i + 1}
                       </a>
                     ))}
                   </div>
@@ -571,11 +584,11 @@ const TrackPage = () => {
       {/* Decorative Bottom SVG */}
       <div className="absolute bottom-0 left-0 w-full pointer-events-none z-0" style={{ height: "60px", minHeight: "25px" }}>
         <svg viewBox="0 0 1440 320" className="w-full h-full">
-          <path fill="#3b82f6" fillOpacity="0.13" d="M0,288L80,272C160,256,320,224,480,224C640,224,800,256,960,256C1120,256,1280,224,1360,208L1440,192L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"></path>
+          <path fill="#3b82f6" fillOpacity="0.13" d="M0,288L80,272C160,256,320,224,480,224C640,224,800,256,960,256C1120,256,1280,224,1360,208L1440,192L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z" />
         </svg>
       </div>
 
-      {/* Animation Styles */}
+      {/* Animations */}
       <style>
         {`
           .animate-fadein {
