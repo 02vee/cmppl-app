@@ -385,12 +385,11 @@ const ContactUsPage = () => {
         </svg>
       </div>
       <button
-        onClick={() => navigate("/")}
-        className="absolute top-5 left-5 text-blue-700 underline z-10"
-      >
-        ← Back to Home
-      </button>
-
+    onClick={() => navigate("/")}
+    className="absolute top-5 left-5 text-blue-700 underline z-10"
+  >
+    ← Back to Home
+  </button>
       <div className="relative z-10 w-full flex flex-col items-center justify-center pt-6 pb-2">
         <h2 className="text-2xl md:text-3xl font-extrabold text-blue-700 mb-5 drop-shadow text-center">Contact Us</h2>
 
