@@ -429,15 +429,19 @@ const TrackPage = () => {
     try {
       const res = await fetch("https://script.google.com/macros/s/AKfycbzAfTnTP312EqwsERgmQegWvHSzj_Knus9oJmeLaV-Eu4hwtv-7oaVn_JBpbzofpmj9/exec");
       const data = await res.json();
-      const links = data.map((item: { link: string }) => item.link);
+      console.log("Fetched from API:", data); // ✅ Debug log
+
+      const links = data.map((item: { link: string }) => item.link).filter(Boolean);
       setBangaloreLinks(links);
     } catch (error) {
-      console.error("Failed to load links", error);
+      console.error("Error fetching links:", error);
+      setBangaloreLinks([]);
     }
   };
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200 overflow-auto">
+      {/* Decorative Top SVG */}
       <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{ height: "90px", minHeight: "40px" }}>
         <svg viewBox="0 0 1440 320" className="w-full h-full">
           <path fill="#3b82f6" fillOpacity="0.15" d="M0,160L80,138.7C160,117,320,75,480,85.3C640,96,800,160,960,186.7C1120,213,1280,203,1360,197.3L1440,192L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z"></path>
@@ -448,12 +452,11 @@ const TrackPage = () => {
         <div className="mb-2 animate-bounce-slow">
           <MapPin className="h-12 w-12 text-blue-500 drop-shadow" />
         </div>
-        <h2 className="text-3xl md:text-4xl font-extrabold text-blue-700 mb-1 drop-shadow text-center">
-          Track
-        </h2>
+        <h2 className="text-3xl font-extrabold text-blue-700 mb-1 drop-shadow text-center">Track</h2>
         <div className="mb-6 text-blue-800 text-opacity-80 text-lg font-medium text-center">
           Select a region to track your destination
         </div>
+
         <div className="relative w-full max-w-lg mx-auto flex flex-col items-center">
           {!region && (
             <div className="grid grid-cols-2 gap-6 w-full">
@@ -461,7 +464,7 @@ const TrackPage = () => {
                 <button
                   key={regionName}
                   onClick={() => handleRegionClick(regionName as any)}
-                  className="bg-gradient-to-br from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-500 text-white font-bold py-6 px-0 rounded-2xl shadow-xl transition transform hover:-translate-y-1 focus:ring-4 focus:ring-blue-200 outline-none text-xl tracking-wide"
+                  className="bg-gradient-to-br from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-500 text-white font-bold py-6 rounded-2xl shadow-xl transition transform hover:-translate-y-1 text-xl"
                   style={{ minWidth: 120 }}
                 >
                   {regionName}
@@ -470,14 +473,10 @@ const TrackPage = () => {
             </div>
           )}
 
+          {/* South Region with Bangalore Button */}
           {region === "South" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
-              <button
-                onClick={handleBack}
-                className="text-blue-600 hover:underline mb-4 block text-left self-start"
-              >
-                &larr; Back
-              </button>
+              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
               <div className="bg-white/95 border-l-8 border-blue-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-blue-700">South Region</div>
                 <div className="flex flex-wrap gap-6 justify-center">
@@ -503,14 +502,10 @@ const TrackPage = () => {
             </div>
           )}
 
+          {/* Bangalore Region Link Display */}
           {region === "Bangalore" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
-              <button
-                onClick={handleBack}
-                className="text-blue-600 hover:underline mb-4 block text-left self-start"
-              >
-                &larr; Back
-              </button>
+              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
               <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-green-700">Bangalore Tracking Links</div>
                 {bangaloreLinks.length === 0 ? (
@@ -534,70 +529,65 @@ const TrackPage = () => {
             </div>
           )}
 
+          {/* West Region */}
           {region === "West" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
-              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">
-                &larr; Back
-              </button>
+              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
               <div className="bg-white/95 border-l-8 border-yellow-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-yellow-600">West Region</div>
-                <div className="flex flex-wrap gap-6 justify-center">
-                  <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">
-                    Gujarat
-                  </button>
-                  <button className="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">
-                    Maharastra
-                  </button>
-                </div>
+                <button className="bg-yellow-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Gujarat</button>
+                <button className="bg-yellow-400 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Maharashtra</button>
               </div>
             </div>
           )}
 
+          {/* North Region */}
           {region === "North" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
-              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">
-                &larr; Back
-              </button>
+              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
               <div className="bg-white/95 border-l-8 border-gray-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-gray-600">North Region</div>
-                <p className="text-gray-500">No options available for North yet.</p>
+                <p className="text-gray-500">No options available yet.</p>
               </div>
             </div>
           )}
 
+          {/* East Region */}
           {region === "East" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
-              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">
-                &larr; Back
-              </button>
+              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
               <div className="bg-white/95 border-l-8 border-gray-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-gray-600">East Region</div>
-                <p className="text-gray-500">No options available for East yet.</p>
+                <p className="text-gray-500">No options available yet.</p>
               </div>
             </div>
           )}
         </div>
       </div>
 
+      {/* Decorative Bottom SVG */}
       <div className="absolute bottom-0 left-0 w-full pointer-events-none z-0" style={{ height: "60px", minHeight: "25px" }}>
         <svg viewBox="0 0 1440 320" className="w-full h-full">
           <path fill="#3b82f6" fillOpacity="0.13" d="M0,288L80,272C160,256,320,224,480,224C640,224,800,256,960,256C1120,256,1280,224,1360,208L1440,192L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"></path>
         </svg>
       </div>
 
+      {/* Animation Styles */}
       <style>
         {`
           .animate-fadein {
             animation: fadein 0.4s;
           }
           @keyframes fadein {
-            from { opacity: 0; transform: translateY(30px);}
-            to { opacity: 1; transform: translateY(0);}
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
           }
-          .animate-bounce-slow { animation: bounce 2.5s infinite; }
+          .animate-bounce-slow {
+            animation: bounce 2.5s infinite;
+          }
           @keyframes bounce {
-            0%, 100% { transform: translateY(0);}
-            50% { transform: translateY(-17px);}
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-17px); }
           }
         `}
       </style>
