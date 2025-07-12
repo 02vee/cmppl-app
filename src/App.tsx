@@ -420,11 +420,12 @@ const ContactUsPage = () => {
     </div>
   );
 };
+
 //---------------------- Track Page ----------------------//
 const TrackPage = () => {
   const [region, setRegion] = useState<null | "South" | "West" | "East" | "North" | "Bangalore">(null);
-  const [bangaloreLinks, setBangaloreLinks] = useState<string[]>([]);
-   const navigate = useNavigate();
+  const [bangaloreLinks, setBangaloreLinks] = useState<{ link: string; timestamp: string }[]>([]);
+  const navigate = useNavigate();
 
   const handleRegionClick = (reg: "South" | "West" | "East" | "North") => setRegion(reg);
   const handleBack = () => setRegion(null);
@@ -436,24 +437,25 @@ const TrackPage = () => {
       console.log("Fetched from API:", data);
 
       const links = Array.isArray(data)
-        ? data.map((item: { link: string }) => item.link)
-        : [data.link]; // fallback
+        ? data.map((item: { link: string; timestamp: string }) => ({
+            link: item.link,
+            timestamp: item.timestamp
+          }))
+        : [];
 
-      setBangaloreLinks(links.filter(Boolean));
+      setBangaloreLinks(links);
     } catch (error) {
       console.error("Error fetching links:", error);
       setBangaloreLinks([]);
     }
   };
 
-  // 🔄 Auto-fetch when region becomes Bangalore
   useEffect(() => {
     if (region === "Bangalore") {
       fetchBangaloreLinks();
     }
   }, [region]);
 
-  // 🔁 Optional: Auto-refresh every 5 minutes
   useEffect(() => {
     if (region === "Bangalore") {
       const interval = setInterval(fetchBangaloreLinks, 5 * 60 * 1000);
@@ -463,12 +465,13 @@ const TrackPage = () => {
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 via-blue-50 to-slate-200 overflow-auto">
-       <button
-    onClick={() => navigate("/")}
-    className="absolute top-5 left-5 text-blue-700 underline z-10"
-  >
-    ← Back to Home
-  </button>
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-5 left-5 text-blue-700 underline z-10"
+      >
+        ← Back to Home
+      </button>
+
       {/* Decorative Top SVG */}
       <div className="absolute top-0 left-0 w-full pointer-events-none z-0" style={{ height: "90px", minHeight: "40px" }}>
         <svg viewBox="0 0 1440 320" className="w-full h-full">
@@ -486,7 +489,6 @@ const TrackPage = () => {
         </div>
 
         <div className="relative w-full max-w-lg mx-auto flex flex-col items-center">
-          {/* Region Buttons */}
           {!region && (
             <div className="grid grid-cols-2 gap-6 w-full">
               {["East", "West", "North", "South"].map((regionName) => (
@@ -502,10 +504,9 @@ const TrackPage = () => {
             </div>
           )}
 
-          {/* South Region */}
           {region === "South" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
-              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
+              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
               <div className="bg-white/95 border-l-8 border-blue-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-blue-700">South Region</div>
                 <div className="flex flex-wrap gap-6 justify-center">
@@ -528,26 +529,38 @@ const TrackPage = () => {
             </div>
           )}
 
-          {/* Bangalore Region Links */}
           {region === "Bangalore" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
-              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
+              <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
               <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-green-700">Bangalore Tracking Links</div>
                 {bangaloreLinks.length === 0 ? (
                   <p className="text-gray-500">No active links found.</p>
                 ) : (
-                  <div className="flex flex-wrap gap-4 justify-center">
-                    {bangaloreLinks.map((link, i) => (
-                      <a
+                  <div className="flex flex-col gap-3 w-full text-left">
+                    {bangaloreLinks.map((item, i) => (
+                      <div
                         key={i}
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow transition"
+                        className="bg-green-50 border-l-4 border-green-400 p-3 rounded-lg shadow"
                       >
-                        Link {i + 1}
-                      </a>
+                        <p className="text-sm text-gray-600 font-medium">
+                          📅 {new Date(item.timestamp).toLocaleString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          })}
+                        </p>
+                        <a
+                          href={item.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-700 underline break-all"
+                        >
+                          {item.link}
+                        </a>
+                      </div>
                     ))}
                   </div>
                 )}
