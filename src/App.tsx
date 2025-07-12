@@ -436,12 +436,14 @@ const TrackPage = () => {
       const data = await res.json();
       console.log("Fetched from API:", data);
 
-      const links = Array.isArray(data)
+       const links = Array.isArray(data)
         ? data.map((item: { link: string; timestamp: string }) => ({
             link: item.link,
             timestamp: item.timestamp
           }))
-        : [];
+        : data.link && data.timestamp
+          ? [{ link: data.link, timestamp: data.timestamp }]
+          : [];
 
       setBangaloreLinks(links);
     } catch (error) {
