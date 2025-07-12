@@ -560,7 +560,7 @@ const TrackPage = () => {
                           rel="noopener noreferrer"
                           className="text-green-700 underline break-all"
                         >
-                          {item.link}
+                          Link
                         </a>
                       </div>
                     ))}
