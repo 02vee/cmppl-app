@@ -541,26 +541,23 @@ const TrackPage = () => {
                 ) : (
                   <div className="flex flex-col gap-3 w-full text-left">
                     {bangaloreLinks.map((item, i) => (
-                      <div
-                        key={i}
-                        className="bg-green-50 border-l-4 border-green-400 p-3 rounded-lg shadow"
-                      >
-                        <p className="text-sm text-gray-600 font-medium">
-                          📅 {new Date(item.timestamp).toLocaleString("en-IN", {
+                      <div className="flex items-center justify-between flex-wrap gap-3">
+                      <span className="text-sm text-gray-600 font-medium">
+                     📅 {new Date(item.timestamp).toLocaleString("en-IN", {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
                             hour: "2-digit",
-                            minute: "2-digit"
-                          })}
-                        </p>
-                        <a
-                          href={item.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-green-700 underline break-all"
-                        >
-                          Link
+                            minute: "2-digit",
+                           })}
+                          </span>
+                          <a
+                            href={item.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-green-700 underline font-semibold"
+                          >
+                          View Link
                         </a>
                       </div>
                     ))}
