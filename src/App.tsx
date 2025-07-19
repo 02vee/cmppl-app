@@ -535,7 +535,7 @@ const TrackPage = () => {
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
               <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
               <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
-                <div className="mb-4 text-xl font-semibold text-green-700">Bangalore Tracking Links</div>
+                <div className="mb-4 text-xl font-semibold text-green-700">Bangalore Tracking Links: Associated Logistics</div>
                 {bangaloreLinks.length === 0 ? (
                   <p className="text-gray-500">No active links found.</p>
                 ) : (
@@ -574,7 +574,14 @@ const TrackPage = () => {
               <div className="bg-white/95 border-l-8 border-yellow-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-yellow-600">West Region</div>
                 <button className="bg-yellow-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Gujarat</button>
-                <button className="bg-yellow-400 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Maharashtra</button>
+                <a
+                  href="http://www.ilogistek.com/track/tracking.php" // <-- Replace with actual Maharashtra tracking URL
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                >
+                  Maharashtra
+                </a>
               </div>
             </div>
           )}
