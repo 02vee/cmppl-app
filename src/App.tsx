@@ -573,14 +573,8 @@ const TrackPage = () => {
               <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">&larr; Back</button>
               <div className="bg-white/95 border-l-8 border-yellow-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-yellow-600">West Region</div>
-                <a
-                    href="https://example.com/gujarat-link"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg mb-4"
-                  >
-                    Gujarat
-                  </a>
+                <div className="flex flex-wrap gap-6 justify-center">
+                <button className="bg-yellow-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Gujarat</button>
                 <a
                   href="http://www.ilogistek.com/track/tracking.php" // <-- Replace with actual Maharashtra tracking URL
                   target="_blank"
@@ -591,6 +585,7 @@ const TrackPage = () => {
                 </a>
               </div>
             </div>
+          </div>
           )}
 
           {/* North Region */}
