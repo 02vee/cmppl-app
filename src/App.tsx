@@ -432,7 +432,7 @@ const TrackPage = () => {
 
   const fetchBangaloreLinks = async () => {
     try {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbzAfTnTP312EqwsERgmQegWvHSzj_Knus9oJmeLaV-Eu4hwtv-7oaVn_JBpbzofpmj9/exec");
+      const res = await fetch("https://script.google.com/macros/s/AKfycbzHpMFI1hxrEzlHy3ksIzalWGnxOd2xrcm38Nxxr9_ezcOOHf5SWpswMsFhLaHH6G26/exec");
       const data = await res.json();
       console.log("Fetched from API:", data);
 
