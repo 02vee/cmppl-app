@@ -512,7 +512,7 @@ const TrackPage = () => {
               <div className="bg-white/95 border-l-8 border-blue-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-blue-700">South Region</div>
                 <div className="flex flex-wrap gap-6 justify-center">
-                  <button className="bg-yellow-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Bulker</button>
+                  <button className="bg-yellow-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Bulker 1</button>
                   <a
                     href="https://industry.roado.tech/trips/ongoing"
                     target="_blank"
