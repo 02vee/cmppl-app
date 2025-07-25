@@ -526,7 +526,14 @@ const TrackPage = () => {
                   >
                     Bangalore
                   </button>
-                  <button className="bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg">Bulker</button>
+                   <a
+                    href="https://gpsmiles.live/jsp/index.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                  >
+                    Bulker
+                  </a>
                 </div>
               </div>
             </div>
