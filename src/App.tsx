@@ -479,7 +479,7 @@ const TrackPage = () => {
     setIsLoadingArcl(true);
     setArclError(null);
     try {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbzHpMFI1hxrEzlHy3ksIzalWGnxOd2xrcm38Nxxr9_ezcOOHf5SWpswMsFhLaHH6G26/exec");
+      const res = await fetch("https://script.google.com/macros/s/AKfycbxC0GWULbwUvblezhQBeqeWroedHT22dD7b0ZIsmAQ5CkDlW1Rt8VC7c1hRZvuinzrG/exec");
       const data = await res.json();
 
        const links = Array.isArray(data)
