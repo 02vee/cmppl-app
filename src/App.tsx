@@ -687,7 +687,7 @@ const TrackPage = () => {
                       })}
                     </span>
                     <span className="text-gray-600 font-semibold">
-                      🚛{item.VehicleNumber || "Unknown Vehicle"}
+                      🚛{item.VehicleNumber || "Unknown"}
                     </span>
                     <a
                       href={item.link}
