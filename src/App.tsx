@@ -423,13 +423,19 @@ const ContactUsPage = () => {
 
 //---------------------- Track Page ----------------------//
 const TrackPage = () => {
-  const [region, setRegion] = useState<null | "South" | "West" | "East" | "North" | "Bangalore"| "Bulker">(null);
+  const [region, setRegion] = useState<null | "South" | "West" | "East" | "North" | "Bangalore"| "Bulker"| "ARCL">(null);
   const [bangaloreLinks, setBangaloreLinks] = useState<{ link: string; timestamp: string }[]>([]);
+  const [isLoadingBangalore, setIsLoadingBangalore] = useState(false);
+  const [BangaloreError, setBangaloreError] = useState<string | null>(null);
+  const [arclLinks, setArclLinks] = useState<{ link: string; timestamp: string }[]>([]);
+  const [isLoadingArcl, setIsLoadingArcl] = useState(false);
+  const [arclError, setArclError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleRegionClick = (reg: "South" | "West" | "East" | "North") => setRegion(reg);
   const handleBack = () => setRegion(null);
 
+  //---------Bangalore--------------//
   const fetchBangaloreLinks = async () => {
     try {
       const res = await fetch("https://script.google.com/macros/s/AKfycbzHpMFI1hxrEzlHy3ksIzalWGnxOd2xrcm38Nxxr9_ezcOOHf5SWpswMsFhLaHH6G26/exec");
@@ -461,6 +467,42 @@ const TrackPage = () => {
   useEffect(() => {
     if (region === "Bangalore") {
       const interval = setInterval(fetchBangaloreLinks, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [region]);
+
+  //------------ARCL-------------//
+  const fetchArclLinks = async () => {
+    try {
+      const res = await fetch("https://script.google.com/macros/s/AKfycbzHpMFI1hxrEzlHy3ksIzalWGnxOd2xrcm38Nxxr9_ezcOOHf5SWpswMsFhLaHH6G26/exec");
+      const data = await res.json();
+      console.log("Fetched from API:", data);
+
+       const links = Array.isArray(data)
+        ? data.map((item: { link: string; timestamp: string }) => ({
+            link: item.link,
+            timestamp: item.timestamp
+          }))
+        : data.link && data.timestamp
+          ? [{ link: data.link, timestamp: data.timestamp }]
+          : [];
+
+      setArclLinks(links);
+    } catch (error) {
+      console.error("Error fetching links:", error);
+      setArclLinks([]);
+    }
+  };
+
+  useEffect(() => {
+    if (region === "ARCL") {
+      fetchArclLinks();
+    }
+  }, [region]);
+
+  useEffect(() => {
+    if (region === "ARCL") {
+      const interval = setInterval(fetchArclLinks, 5 * 60 * 1000);
       return () => clearInterval(interval);
     }
   }, [region]);
@@ -542,9 +584,13 @@ const TrackPage = () => {
               <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
               <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-green-700">Bangalore Tracking Links: Associated Logistics</div>
-                {bangaloreLinks.length === 0 ? (
-                  <p className="text-gray-500">No active links found.</p>
-                ) : (
+                {isLoadingBangalore ? (
+              <p className="text-gray-600">Loading...</p>
+            ) : arclError ? (
+              <p className="text-red-600">{BangaloreError}</p>
+            ) : arclLinks.length === 0 ? (
+              <p className="text-gray-500">No active links found.</p>
+            ) : (
                   <div className="flex flex-col gap-3 w-full text-left">
                     {bangaloreLinks.map((item, i) => (
                       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -587,14 +633,12 @@ const TrackPage = () => {
                 >
                   JFC
                 </a>
-                <a
-                  href="https://arcl-link-here.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => setRegion("ARCL")}
                   className="bg-blue-400 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
                 >
                   ARCL
-                </a>
+                </button>
                 <a
                   href="https://allience-link-here.com"
                   target="_blank"
@@ -607,6 +651,49 @@ const TrackPage = () => {
             </div>
           </div>
         )}
+
+        {region === "ARCL" && (
+        <div className="animate-fadein flex flex-col items-center w-full mt-3">
+          <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
+          <div className="bg-white/95 border-l-8 border-blue-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
+            <div className="mb-4 text-xl font-semibold text-blue-700">ARCL Tracking Links</div>
+            {isLoadingArcl ? (
+              <p className="text-gray-600">Loading...</p>
+            ) : arclError ? (
+              <p className="text-red-600">{arclError}</p>
+            ) : arclLinks.length === 0 ? (
+              <p className="text-gray-500">No active links found.</p>
+            ) : (
+              <div className="flex flex-col gap-3 w-full text-left">
+                {arclLinks.map((item, i) => (
+                  <div
+                    className="flex items-center justify-between flex-wrap gap-3"
+                    key={`${item.link}-${i}`}
+                  >
+                    <span className="text-sm text-gray-600 font-medium">
+                      📅 {new Date(item.timestamp).toLocaleString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-700 underline font-semibold"
+                    >
+                      View Link
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
           {/* West Region */}
           {region === "West" && (
