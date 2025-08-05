@@ -695,7 +695,7 @@ const TrackPage = () => {
 
                     <div className="flex flex-col text-sm">
                       <span className="text-gray-800 font-semibold">
-                        {item.vehicleNumber || "Unknown Vehicle"}
+                        {item.vehicleNumber}
                       </span>
                       <a
                         href={item.link}
