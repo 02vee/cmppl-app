@@ -635,13 +635,13 @@ const TrackPage = () => {
                   href="https://gpsmiles.live/jsp/index.html"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
                 >
                   JFC
                 </a>
                 <button
                   onClick={() => setRegion("ARCL")}
-                  className="bg-blue-400 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                  className="bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
                 >
                   ARCL
                 </button>
@@ -649,7 +649,7 @@ const TrackPage = () => {
                   href="https://allience-link-here.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-blue-300 hover:bg-blue-400 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                  className="bg-green-300 hover:bg-green-400 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
                 >
                   Alliance
                 </a>
@@ -661,8 +661,8 @@ const TrackPage = () => {
         {region === "ARCL" && (
         <div className="animate-fadein flex flex-col items-center w-full mt-3">
           <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
-          <div className="bg-white/95 border-l-8 border-blue-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
-            <div className="mb-4 text-xl font-semibold text-blue-700">ARCL Tracking Links</div>
+          <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
+            <div className="mb-4 text-xl font-semibold text-green-700">ARCL Tracking Links</div>
             {isLoadingArcl ? (
                   <p className="text-gray-600">Loading...</p>
                 ) : arclError ? (
