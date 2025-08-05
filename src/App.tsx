@@ -570,7 +570,7 @@ const TrackPage = () => {
                   </a>
                   <button
                     onClick={() => setRegion("Bangalore")}
-                    className="bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
                   >
                     Bangalore
                   </button>
@@ -641,7 +641,7 @@ const TrackPage = () => {
                 </a>
                 <button
                   onClick={() => setRegion("ARCL")}
-                  className="bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
                 >
                   ARCL
                 </button>
@@ -649,7 +649,7 @@ const TrackPage = () => {
                   href="https://allience-link-here.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-green-300 hover:bg-green-400 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
                 >
                   Alliance
                 </a>
