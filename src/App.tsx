@@ -423,7 +423,7 @@ const ContactUsPage = () => {
 
 //---------------------- Track Page ----------------------//
 const TrackPage = () => {
-  const [region, setRegion] = useState<null | "South" | "West" | "East" | "North" | "Bangalore">(null);
+  const [region, setRegion] = useState<null | "South" | "West" | "East" | "North" | "Bangalore"| "Bulker">(null);
   const [bangaloreLinks, setBangaloreLinks] = useState<{ link: string; timestamp: string }[]>([]);
   const navigate = useNavigate();
 
@@ -526,14 +526,12 @@ const TrackPage = () => {
                   >
                     Bangalore
                   </button>
-                   <a
-                    href="https://gpsmiles.live/jsp/index.html"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => setRegion("Bulker")}
                     className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
                   >
                     Bulker
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -574,6 +572,41 @@ const TrackPage = () => {
               </div>
             </div>
           )}
+
+          {region === "Bulker" && (
+          <div className="animate-fadein flex flex-col items-center w-full mt-3">
+            <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
+            <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
+              <div className="mb-4 text-xl font-semibold text-green-700">Bulker Tracking Links</div>
+              <div className="flex flex-wrap gap-6 justify-center">
+                <a
+                  href="https://gpsmiles.live/jsp/index.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                >
+                  JFC
+                </a>
+                <a
+                  href="https://arcl-link-here.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-400 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                >
+                  ARCL
+                </a>
+                <a
+                  href="https://allience-link-here.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-300 hover:bg-blue-400 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                >
+                  Alliance
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
           {/* West Region */}
           {region === "West" && (
