@@ -665,16 +665,18 @@ const TrackPage = () => {
 
         {region === "ARCL" && (
         <div className="animate-fadein flex flex-col items-center w-full mt-3">
-          <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
+          <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">
+            ← Back
+          </button>
           <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
             <div className="mb-4 text-xl font-semibold text-green-700">ARCL Tracking Links</div>
             {isLoadingArcl ? (
-                  <p className="text-gray-600">Loading...</p>
-                ) : arclError ? (
-                  <p className="text-red-600">{arclError}</p>
-                ) : arclLinks.length === 0 ? (
-                  <p className="text-gray-500">No active links found.</p>
-                ) : (
+              <p className="text-gray-600">Loading...</p>
+            ) : arclError ? (
+              <p className="text-red-600">{arclError}</p>
+            ) : arclLinks.length === 0 ? (
+              <p className="text-gray-500">No active links found.</p>
+            ) : (
               <div className="flex flex-col gap-3 w-full text-left">
                 {arclLinks.map((item, i) => (
                   <div
@@ -690,14 +692,20 @@ const TrackPage = () => {
                         minute: "2-digit",
                       })}
                     </span>
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-700 underline font-semibold"
-                    >
-                      {item.vehicleNumber || "Unknown Vehicle"}
-                    </a>
+
+                    <div className="flex flex-col text-sm">
+                      <span className="text-gray-800 font-semibold">
+                        {item.vehicleNumber || "Unknown Vehicle"}
+                      </span>
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-700 underline"
+                      >
+                        🔗Link
+                      </a>
+                    </div>
                   </div>
                 ))}
               </div>
