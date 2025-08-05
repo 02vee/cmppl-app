@@ -427,7 +427,7 @@ const TrackPage = () => {
   const [bangaloreLinks, setBangaloreLinks] = useState<{ link: string; timestamp: string }[]>([]);
   const [isLoadingBangalore, setIsLoadingBangalore] = useState(false);
   const [BangaloreError, setBangaloreError] = useState<string | null>(null);
-  const [arclLinks, setArclLinks] = useState<{ link: string; timestamp: string; vehicleNumber: string }[]>([]);
+  const [arclLinks, setArclLinks] = useState<{ link: string; timestamp: string}[]>([]);
   const [isLoadingArcl, setIsLoadingArcl] = useState(false);
   const [arclError, setArclError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -483,12 +483,13 @@ const TrackPage = () => {
       const data = await res.json();
 
        const links = Array.isArray(data)
-        ? data.map((item: { link: string; timestamp: string; vehicleNumber: string }) => ({
+        ? data.map((item: { link: string; timestamp: string }) => ({
             link: item.link,
-            timestamp: item.timestamp,
-            vehicleNumber: item.vehicleNumber || "Unknown"
+            timestamp: item.timestamp
           }))
-        : [];
+        : data.link && data.timestamp
+          ? [{ link: data.link, timestamp: data.timestamp }]
+          : [];
 
        setArclLinks(links);
     } catch (error) {
@@ -684,7 +685,6 @@ const TrackPage = () => {
                         minute: "2-digit",
                       })}
                     </span>
-                    <span>🚛 {item.vehicleNumber}</span>
                     <a
                       href={item.link}
                       target="_blank"
