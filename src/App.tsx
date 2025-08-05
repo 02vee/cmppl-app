@@ -483,17 +483,11 @@ const TrackPage = () => {
       const data = await res.json();
 
        const links = Array.isArray(data)
-      ? data.map((item: { link: string; timestamp: string; vehicleNumber?: string }) => ({
-          link: item.link,
-          timestamp: item.timestamp,
-          vehicleNumber: item.vehicleNumber || "Unknown Vehicle"
-        }))
-      : data.link && data.timestamp
-        ? [{
-            link: data.link,
-            timestamp: data.timestamp,
-            vehicleNumber: data.vehicleNumber || "Unknown Vehicle"
-          }]
+        ? data.map((item: { link: string; timestamp: string; vehicleNumber: string }) => ({
+            link: item.link,
+            timestamp: item.timestamp,
+            vehicleNumber: item.vehicleNumber || "Unknown"
+          }))
         : [];
 
        setArclLinks(links);
@@ -665,18 +659,16 @@ const TrackPage = () => {
 
         {region === "ARCL" && (
         <div className="animate-fadein flex flex-col items-center w-full mt-3">
-          <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">
-            ← Back
-          </button>
+          <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
           <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
             <div className="mb-4 text-xl font-semibold text-green-700">ARCL Tracking Links</div>
             {isLoadingArcl ? (
-              <p className="text-gray-600">Loading...</p>
-            ) : arclError ? (
-              <p className="text-red-600">{arclError}</p>
-            ) : arclLinks.length === 0 ? (
-              <p className="text-gray-500">No active links found.</p>
-            ) : (
+                  <p className="text-gray-600">Loading...</p>
+                ) : arclError ? (
+                  <p className="text-red-600">{arclError}</p>
+                ) : arclLinks.length === 0 ? (
+                  <p className="text-gray-500">No active links found.</p>
+                ) : (
               <div className="flex flex-col gap-3 w-full text-left">
                 {arclLinks.map((item, i) => (
                   <div
@@ -692,20 +684,15 @@ const TrackPage = () => {
                         minute: "2-digit",
                       })}
                     </span>
-
-                    <div className="flex flex-col text-sm">
-                      <span className="text-gray-800 font-semibold">
-                        {item.vehicleNumber}
-                      </span>
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-700 underline"
-                      >
-                        🔗Link
-                      </a>
-                    </div>
+                    <span>🚛 {item.vehicleNumber}</span>
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-700 underline font-semibold"
+                    >
+                      🔗Link
+                    </a>
                   </div>
                 ))}
               </div>
