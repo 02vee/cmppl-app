@@ -437,10 +437,11 @@ const TrackPage = () => {
 
   //---------Bangalore--------------//
   const fetchBangaloreLinks = async () => {
+    setIsLoadingBangalore(true);
+    setBangaloreError(null);
     try {
       const res = await fetch("https://script.google.com/macros/s/AKfycbzHpMFI1hxrEzlHy3ksIzalWGnxOd2xrcm38Nxxr9_ezcOOHf5SWpswMsFhLaHH6G26/exec");
       const data = await res.json();
-      console.log("Fetched from API:", data);
 
        const links = Array.isArray(data)
         ? data.map((item: { link: string; timestamp: string }) => ({
@@ -453,8 +454,10 @@ const TrackPage = () => {
 
       setBangaloreLinks(links);
     } catch (error) {
-      console.error("Error fetching links:", error);
+      setBangaloreError("Failed to fetch Bangalore links");
       setBangaloreLinks([]);
+    } finally {
+      setIsLoadingBangalore(false);
     }
   };
 
@@ -473,10 +476,11 @@ const TrackPage = () => {
 
   //------------ARCL-------------//
   const fetchArclLinks = async () => {
+    setIsLoadingArcl(true);
+    setArclError(null);
     try {
       const res = await fetch("https://script.google.com/macros/s/AKfycbzHpMFI1hxrEzlHy3ksIzalWGnxOd2xrcm38Nxxr9_ezcOOHf5SWpswMsFhLaHH6G26/exec");
       const data = await res.json();
-      console.log("Fetched from API:", data);
 
        const links = Array.isArray(data)
         ? data.map((item: { link: string; timestamp: string }) => ({
@@ -487,10 +491,12 @@ const TrackPage = () => {
           ? [{ link: data.link, timestamp: data.timestamp }]
           : [];
 
-      setArclLinks(links);
+       setArclLinks(links);
     } catch (error) {
-      console.error("Error fetching links:", error);
+      setArclError("Failed to fetch ARCL links");
       setArclLinks([]);
+    } finally {
+      setIsLoadingArcl(false);
     }
   };
 
@@ -585,12 +591,12 @@ const TrackPage = () => {
               <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
                 <div className="mb-4 text-xl font-semibold text-green-700">Bangalore Tracking Links: Associated Logistics</div>
                 {isLoadingBangalore ? (
-              <p className="text-gray-600">Loading...</p>
-            ) : arclError ? (
-              <p className="text-red-600">{BangaloreError}</p>
-            ) : arclLinks.length === 0 ? (
-              <p className="text-gray-500">No active links found.</p>
-            ) : (
+                  <p className="text-gray-600">Loading...</p>
+                ) : BangaloreError ? (
+                  <p className="text-red-600">{BangaloreError}</p>
+                ) : bangaloreLinks.length === 0 ? (
+                  <p className="text-gray-500">No active links found.</p>
+                ) : (
                   <div className="flex flex-col gap-3 w-full text-left">
                     {bangaloreLinks.map((item, i) => (
                       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -658,12 +664,12 @@ const TrackPage = () => {
           <div className="bg-white/95 border-l-8 border-blue-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
             <div className="mb-4 text-xl font-semibold text-blue-700">ARCL Tracking Links</div>
             {isLoadingArcl ? (
-              <p className="text-gray-600">Loading...</p>
-            ) : arclError ? (
-              <p className="text-red-600">{arclError}</p>
-            ) : arclLinks.length === 0 ? (
-              <p className="text-gray-500">No active links found.</p>
-            ) : (
+                  <p className="text-gray-600">Loading...</p>
+                ) : arclError ? (
+                  <p className="text-red-600">{arclError}</p>
+                ) : arclLinks.length === 0 ? (
+                  <p className="text-gray-500">No active links found.</p>
+                ) : (
               <div className="flex flex-col gap-3 w-full text-left">
                 {arclLinks.map((item, i) => (
                   <div
