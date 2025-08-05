@@ -427,7 +427,7 @@ const TrackPage = () => {
   const [bangaloreLinks, setBangaloreLinks] = useState<{ link: string; timestamp: string }[]>([]);
   const [isLoadingBangalore, setIsLoadingBangalore] = useState(false);
   const [BangaloreError, setBangaloreError] = useState<string | null>(null);
-  const [arclLinks, setArclLinks] = useState<{ link: string; timestamp: string }[]>([]);
+  const [arclLinks, setArclLinks] = useState<{ link: string; timestamp: string; vehicleNumber: string }[]>([]);
   const [isLoadingArcl, setIsLoadingArcl] = useState(false);
   const [arclError, setArclError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -483,13 +483,18 @@ const TrackPage = () => {
       const data = await res.json();
 
        const links = Array.isArray(data)
-        ? data.map((item: { link: string; timestamp: string }) => ({
-            link: item.link,
-            timestamp: item.timestamp
-          }))
-        : data.link && data.timestamp
-          ? [{ link: data.link, timestamp: data.timestamp }]
-          : [];
+      ? data.map((item: { link: string; timestamp: string; vehicleNumber?: string }) => ({
+          link: item.link,
+          timestamp: item.timestamp,
+          vehicleNumber: item.vehicleNumber || "Unknown Vehicle"
+        }))
+      : data.link && data.timestamp
+        ? [{
+            link: data.link,
+            timestamp: data.timestamp,
+            vehicleNumber: data.vehicleNumber || "Unknown Vehicle"
+          }]
+        : [];
 
        setArclLinks(links);
     } catch (error) {
@@ -691,7 +696,7 @@ const TrackPage = () => {
                       rel="noopener noreferrer"
                       className="text-blue-700 underline font-semibold"
                     >
-                      View Link
+                      {item.vehicleNumber || "Unknown Vehicle"}
                     </a>
                   </div>
                 ))}
