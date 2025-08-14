@@ -423,10 +423,10 @@ const ContactUsPage = () => {
 
 //---------------------- Track Page ----------------------//
 const TrackPage = () => {
-  const [region, setRegion] = useState<null | "South" | "West" | "East" | "North" | "Bangalore"| "Bulker"| "ARCL">(null);
-  const [bangaloreLinks, setBangaloreLinks] = useState<{ link: string; timestamp: string }[]>([]);
-  const [isLoadingBangalore, setIsLoadingBangalore] = useState(false);
-  const [BangaloreError, setBangaloreError] = useState<string | null>(null);
+  const [region, setRegion] = useState<null | "South" | "West" | "East" | "North" | "Bangalore"| "Associated"| "Bulker"| "ARCL">(null);
+  const [AssociatedLinks, setAssociatedLinks] = useState<{ link: string; timestamp: string }[]>([]);
+  const [isLoadingAssociated, setIsLoadingAssociated] = useState(false);
+  const [AssociatedError, setAssociatedError] = useState<string | null>(null);
   const [arclLinks, setArclLinks] = useState<{ link: string; timestamp: string}[]>([]);
   const [isLoadingArcl, setIsLoadingArcl] = useState(false);
   const [arclError, setArclError] = useState<string | null>(null);
@@ -436,9 +436,9 @@ const TrackPage = () => {
   const handleBack = () => setRegion(null);
 
   //---------Bangalore--------------//
-  const fetchBangaloreLinks = async () => {
-    setIsLoadingBangalore(true);
-    setBangaloreError(null);
+  const fetchAssociatedLinks = async () => {
+    setIsLoadingAssociated(true);
+    setAssociatedError(null);
     try {
       const res = await fetch("https://script.google.com/macros/s/AKfycbzHpMFI1hxrEzlHy3ksIzalWGnxOd2xrcm38Nxxr9_ezcOOHf5SWpswMsFhLaHH6G26/exec");
       const data = await res.json();
@@ -452,24 +452,24 @@ const TrackPage = () => {
           ? [{ link: data.link, timestamp: data.timestamp }]
           : [];
 
-      setBangaloreLinks(links);
+      setAssociatedLinks(links);
     } catch (error) {
-      setBangaloreError("Failed to fetch Bangalore links");
-      setBangaloreLinks([]);
+      setAssociatedError("Failed to fetch Associated links");
+      setAssociatedLinks([]);
     } finally {
-      setIsLoadingBangalore(false);
+      setIsLoadingAssociated(false);
     }
   };
 
   useEffect(() => {
-    if (region === "Bangalore") {
-      fetchBangaloreLinks();
+    if (region === "Associated") {
+      fetchAssociatedLinks();
     }
   }, [region]);
 
   useEffect(() => {
-    if (region === "Bangalore") {
-      const interval = setInterval(fetchBangaloreLinks, 5 * 60 * 1000);
+    if (region === "Associated") {
+      const interval = setInterval(fetchAssociatedLinks, 5 * 60 * 1000);
       return () => clearInterval(interval);
     }
   }, [region]);
@@ -586,19 +586,42 @@ const TrackPage = () => {
           )}
 
           {region === "Bangalore" && (
+          <div className="animate-fadein flex flex-col items-center w-full mt-3">
+            <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
+            <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
+              <div className="mb-4 text-xl font-semibold text-green-700">Bangalore Tracking Links</div>
+              <div className="flex flex-wrap gap-6 justify-center">
+                <button
+                  onClick={() => setRegion("Associated")}
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                >
+                  Associated Logistics
+                </button>
+                <button
+                  onClick={() => setRegion("ARCL")}
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                >
+                  ARCL
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+          
+          {region === "Associated" && (
             <div className="animate-fadein flex flex-col items-center w-full mt-3">
               <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
               <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
-                <div className="mb-4 text-xl font-semibold text-green-700">Bangalore Tracking Links: Associated Logistics</div>
-                {isLoadingBangalore ? (
+                <div className="mb-4 text-xl font-semibold text-green-700">Associated Logistics</div>
+                {isLoadingAssociated ? (
                   <p className="text-gray-600">Loading...</p>
-                ) : BangaloreError ? (
-                  <p className="text-red-600">{BangaloreError}</p>
-                ) : bangaloreLinks.length === 0 ? (
+                ) : AssociatedError ? (
+                  <p className="text-red-600">{AssociatedError}</p>
+                ) : AssociatedLinks.length === 0 ? (
                   <p className="text-gray-500">No active links found.</p>
                 ) : (
                   <div className="flex flex-col gap-3 w-full text-left">
-                    {bangaloreLinks.map((item, i) => (
+                    {AssociatedLinks.map((item, i) => (
                       <div className="flex items-center justify-between flex-wrap gap-3">
                       <span className="text-sm text-gray-600 font-medium">
                      📅 {new Date(item.timestamp).toLocaleString("en-IN", {
@@ -615,7 +638,7 @@ const TrackPage = () => {
                             rel="noopener noreferrer"
                             className="text-green-700 underline font-semibold"
                           >
-                          View Link
+                           🔗Link
                         </a>
                       </div>
                     ))}
@@ -625,40 +648,7 @@ const TrackPage = () => {
             </div>
           )}
 
-          {region === "Bulker" && (
-          <div className="animate-fadein flex flex-col items-center w-full mt-3">
-            <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
-            <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
-              <div className="mb-4 text-xl font-semibold text-green-700">Bulker Tracking Links</div>
-              <div className="flex flex-wrap gap-6 justify-center">
-                <a
-                  href="https://gpsmiles.live/jsp/index.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
-                >
-                  JFC
-                </a>
-                <button
-                  onClick={() => setRegion("ARCL")}
-                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
-                >
-                  ARCL
-                </button>
-                <a
-                  href="https://allience-link-here.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
-                >
-                  Alliance
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {region === "ARCL" && (
+          {region === "ARCL" && (
         <div className="animate-fadein flex flex-col items-center w-full mt-3">
           <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
           <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
@@ -700,6 +690,33 @@ const TrackPage = () => {
           </div>
         </div>
       )}
+
+          {region === "Bulker" && (
+          <div className="animate-fadein flex flex-col items-center w-full mt-3">
+            <button onClick={handleBack} className="text-blue-600 hover:underline mb-4 block text-left self-start">← Back</button>
+            <div className="bg-white/95 border-l-8 border-green-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
+              <div className="mb-4 text-xl font-semibold text-green-700">Bulker Tracking</div>
+              <div className="flex flex-wrap gap-6 justify-center">
+                <a
+                  href="https://gpsmiles.live/jsp/index.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                >
+                  JFC
+                </a>
+                <a
+                  href="https://allience-link-here.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
+                >
+                  Alliance
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
           {/* West Region */}
           {region === "West" && (
