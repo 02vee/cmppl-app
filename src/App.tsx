@@ -636,7 +636,7 @@ const TrackPage = () => {
                             href={item.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-green-700 underline font-semibold"
+                            className="text-blue-700 underline font-semibold"
                           >
                            🔗Link
                         </a>
