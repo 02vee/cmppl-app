@@ -541,7 +541,7 @@ const TrackPage = () => {
         <div className="relative w-full max-w-lg mx-auto flex flex-col items-center">
           {!region && (
             <div className="grid grid-cols-2 gap-6 w-full">
-              {["East", "West", "North", "South", "Aditi Tracking"].map((regionName) => (
+              {["East", "West", "North", "South"].map((regionName) => (
                 <button
                   key={regionName}
                   onClick={() => handleRegionClick(regionName as any)}
@@ -551,6 +551,15 @@ const TrackPage = () => {
                   {regionName}
                 </button>
               ))}
+               <a
+                href="http://clicktask.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-gradient-to-br from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-500 text-white font-bold py-6 rounded-2xl shadow-xl transition transform hover:-translate-y-1 text-xl text-center flex items-center justify-center"
+                style={{ minWidth: 120 }}
+              >
+                Aditi Tracking
+              </a>
             </div>
           )}
 
@@ -760,31 +769,8 @@ const TrackPage = () => {
               </div>
             </div>
           )}
-
-          {region === "Aditi Tracking" && (
-  <div className="animate-fadein flex flex-col items-center w-full mt-3">
-    <button
-      onClick={handleBack}
-      className="text-blue-600 hover:underline mb-4 block text-left self-start"
-    >
-      ← Back
-    </button>
-    <div className="bg-white/95 border-l-8 border-purple-400 rounded-2xl shadow-2xl p-8 w-full flex flex-col items-center">
-      <div className="mb-4 text-xl font-semibold text-purple-700">Aditi Tracking</div>
-      <a
-        href="http://gpsmiles.live"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
-      >
-        Open Tracking
-      </a>
-    </div>
-  </div>
-)}
         </div>
       </div>
-      
 
       {/* Decorative Bottom SVG */}
       <div className="absolute bottom-0 left-0 w-full pointer-events-none z-0" style={{ height: "60px", minHeight: "25px" }}>
