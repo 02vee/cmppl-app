@@ -698,7 +698,7 @@ const TrackPage = () => {
               <div className="mb-4 text-xl font-semibold text-green-700">Bulker Tracking</div>
               <div className="flex flex-wrap gap-6 justify-center">
                 <a
-                  href="https://gpsmiles.live/jsp/index.html"
+                  href="http://gpsmiles.live"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
@@ -706,7 +706,7 @@ const TrackPage = () => {
                   JFC
                 </a>
                 <a
-                  href="https://gpsmiles.live/jsp/index.html"
+                  href="http://gpsmiles.live"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
