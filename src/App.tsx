@@ -706,7 +706,7 @@ const TrackPage = () => {
                   JFC
                 </a>
                 <a
-                  href="https://allience-link-here.com"
+                  href="https://gpsmiles.live/jsp/index.html"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
