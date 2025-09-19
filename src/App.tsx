@@ -712,15 +712,7 @@ const TrackPage = () => {
                   rel="noopener noreferrer"
                   className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
                 >
-                  JFC
-                </a>
-                <a
-                  href="http://gpsmiles.live"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl shadow transition text-lg"
-                >
-                  Alliance
+                  JFC, Alliance, Vettore
                 </a>
               </div>
             </div>
