@@ -1212,7 +1212,7 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === 'cmppl' && password === 'Cmppl123') {
+    if (username === 'cmppl' && password === 'Alccofine1203') {
       localStorage.setItem('isAuthenticated', 'true');
       navigate('/admin');
     } else setError('Invalid username or password');
